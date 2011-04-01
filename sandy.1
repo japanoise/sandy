@@ -1,0 +1,179 @@
+.TH SANDY 1 sandy\-VERSION
+.SH NAME
+sandy \- simple ncurses text editor
+.SH SYNOPSIS
+.B sandy
+.RB [ \-hru ]
+.RB [ \-t\ tabstop ]
+.RB [ \-s\ syntax ]
+.RB [File | -]
+.SH DESCRIPTION
+sandy is a simple ncurses Text Editor. It loads and saves files and lets you perform basic editing and pipe the selection through arbitrary commands. A small degree of external control can be achieved by writing to a named pipe.
+.SH OPTIONS
+.TP
+.B \-h
+Prints usage information to standard output, then exits.
+.TP
+.B \-r
+Opens the selected file read-only.
+.TP
+.B \-s syntax
+Manually choose the syntax colors.
+.TP
+.B \-t tabstop
+Use selected tabstop in characters.
+.TP
+.B \-u
+Reverse UTF-8 behavior. UTF-8 processing is on by default.
+.TP
+.B \-v
+Prints version information to standard output, then exits.
+.SH USAGE
+The default key-bindings try to stick to the "emacs-mode" present in modern shells (specifically mksh(1)), which actually differs a bit from what emacs(1) does. External input is handled using dmenu(1) if the DISPLAY environment variable is set, read using sh(1) otherwise.
+.SS Cursor movement
+Cursor movement bindings can also be used to select text by pressing Ctrl\-g to start a selection (see below)
+.TP
+.B Ctrl\-f or Right
+Move cursor to next char.
+.TP
+.B Ctrl\-b or Left
+Move cursor to previous char.
+.TP
+.B Ctrl\-n or Down
+Move cursor to next line.
+.TP
+.B Ctrl\-p or Up
+Move cursor to previous line.
+.TP
+.B Meta\-f or Shift\-Right
+Move cursor to the end of this or next word.
+.TP
+.B Meta\-b or Shift\-Left
+Move cursor to the start of this or previous word.
+.TP
+.B Ctrl\-a or Home
+Move cursor to the beginning of the current line.
+.TP
+.B Ctrl\-e or End
+Move cursor to the end of the current line.
+.TP
+.B Meta\-, or Prev
+Move cursor one full screen up.
+.TP
+.B Meta\-. or Next
+Move cursor one full screen down.
+.TP
+.B Meta\-< or Shift-Home
+Move cursor to the beginning of the file.
+.TP
+.B Meta\-> or Shift-End
+Move cursor to the end of the file.
+.TP
+.B Meta\-g
+Prompt for a line number and go there.
+.SS Finding and selecting
+Text is searched and selected using POSIX regular expressions
+.TP
+.B Ctrl\-s
+Prompt for a search regex forward.
+.TP
+.B Meta\-s
+Search forward using the (first line of the) current selection as a regex.
+.TP
+.B Ctrl\-r
+Prompt for a search regex backwards.
+.TP
+.B Meta\-r
+Search backwards using the (first line of the) current selection as a regex.
+.TP
+.B Meta\-n
+Find next occurrence of last search forward.
+.TP
+.B Meta\-p
+Find next occurrence of last search backwards.
+.TP
+.B Ctrl\-x
+Extend selection to word, line, or full file from current.
+.TP
+.B Meta\-x
+Select full file.
+.TP
+.B Ctrl\-g
+Cancel selection, or start selecting text manually.
+.TP
+.B Meta\-i
+Toggle case (in)sensitive search.
+.SS Deleting
+If any text is selected, any of these bindings deletes it and, unless Backspace or Delete, moves it to the clipboard. Otherwise they behave as per this text. In read-only mode, these bindings select text instead.
+.TP
+.B Ctrl\-d or Delete
+Delete next character.
+.TP
+.B Ctrl\-h or Backspace
+Delete previous character.
+.TP
+.B Ctrl\-u
+Delete to beginning of line or join with previous line.
+.TP
+.B Ctrl\-k
+Delete to end of line or join with next line.
+.TP
+.B Ctrl\-w
+Delete to beginning of word or previous word.
+.TP
+.B Meta\-d
+Delete to end of word or next word.
+.SS Mark
+The mark is a single fixed position in the file that can be used as bookmark.
+.TP
+.B Meta\-Space
+Set mark in current position.
+.TP
+.B Ctrl\-` or Ctrl\-Space
+Go to mark. Prepend with Ctrl\-g to select to mark.
+.SS File operations
+.TP
+.B Meta\-q
+Quit if the file has not been modified.
+.TP
+.B Meta\-Shift\-q
+Quit unconditionally.
+.TP
+.B Meta\-w
+Write changes to disk.
+.TP
+.B Meta\-Shift\-w
+Prompt for a different filename to save the file as.
+.SS Text operations
+These operations affect the selected text if any.
+.TP
+.B Ctrl\-\\
+Prompt for a command to pipe text through.
+.TP
+.B Ctrl\-y or Shift-Insert
+Replace (paste, yank) with text from the clipboard.
+.TP
+.B Ctrl\-c or Insert
+Copy to the clipboard.
+.TP
+.B Shift-Delete
+Copy to the clipboard and delete.
+.SS Other
+.TP
+.B Ctrl\-l
+Center screen in current line.
+.TP
+.B Ctrl\-v
+Insert next character as-is.
+.TP
+.B Meta\-Shift\-r
+Toggle read-only status for file.
+.TP
+.B Meta\-Shift\-s
+Prompt for a file syntax to use.
+.SH SEE ALSO
+.BR sed(1)
+.BR xprop(1)
+.BR zenity(1)
+.SH BUGS
+Please report them!

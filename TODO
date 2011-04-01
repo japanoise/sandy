@@ -1,0 +1,23 @@
+In no particular order, at sandy.c:
+- Rework m_*word
+- Create m_*vline
+- Bracket matching?
+- Autoindenting?
+- Number modifier?
+- Smart end? is it really needed?
+- Scroll windows with wscrl?
+- BUG: high CPU usage on continuous resize
+- BUG: tab characters after first vline
+- BUG: Deal with the bigger-than-window line
+- Improve regex search (backwards!!)
+- Improve syntax highlight, multiline?
+- Groups Undos
+- Repeat operation (or last pipe at least!)
+
+At config.def.h:
+- Bindings!
+- Use local/system script path and all
+- Choose color-set for either black of white bg
+- Define more syntaxes
+- Refine syntax regexes
+
