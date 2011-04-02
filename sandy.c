@@ -1042,7 +1042,7 @@ i_scrtofpos(int x, int y) {
 				pos.l=l;
 				pos.o=0;
 				while(x>(ivchar%cols) || (ivchar/cols)<ixrow) {
-					ivchar+=VLEN(l->c[pos.o], ivchar%cols);
+					ivchar+=VLEN(l->c[pos.o], ivchar%(cols-1));
 					pos.o++;
 				}
 				if(pos.o>pos.l->len) pos.o=pos.l->len;
@@ -1270,7 +1270,7 @@ i_update(void) {
 					if(l && ichar<l->len) {
 						if(l->c[ichar] == 0x09) { /* Tab nightmare */
 							wattrset(textwin, textattrs[SpcFG][ibg]);
-							for(i=0; i<VLEN(0x09, ivchar%cols); i++) waddstr(textwin, ((i==0 && isutf8)?tabstr:" "));
+							for(i=0; i<VLEN(0x09, ivchar%(cols-1)); i++) waddstr(textwin, ((i==0 && isutf8)?tabstr:" "));
 						} else if(l->c[ichar] == ' ') { /* Space */
 							wattrset(textwin, textattrs[SpcFG][ibg]);
 							waddstr(textwin, (isutf8?spcstr:" "));
@@ -1286,7 +1286,7 @@ i_update(void) {
 						} else {
 							waddch(textwin, l->c[ichar]);
 						}
-						ivchar+=VLEN(l->c[ichar], ivchar%cols);
+						ivchar+=VLEN(l->c[ichar], ivchar%(cols-1));
 						if(isutf8 && !ISASCII(l->c[ichar]) && i) ichar+=i; /* ...here */
 						else ichar++;
 					} else {
@@ -1586,7 +1586,7 @@ main(int argc, char **argv){
 			i++;
 			break;
 		} else if(!strcmp(argv[i], "-v"))
-			i_die("sandy-"VERSION", © 2010 sandy engineers, see LICENSE for details\n");
+			i_die("sandy-"VERSION", © 2011 sandy engineers, see LICENSE for details\n");
 		else
 			i_usage();
 	}
