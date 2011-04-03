@@ -35,6 +35,7 @@
 #define ISCTRL(ch)    (((unsigned char)ch < 0x20) || (ch == 0x7F))
 #define ISFILL(ch)    (isutf8 && !ISASCII(ch) && (unsigned char)ch<=0xBF)
 #define VLEN(ch,col)  (ch==0x09 ? tabstop-(col%tabstop) : (ISCTRL(ch) ? 2: (ISFILL(ch) ? 0: 1)))
+#define VLINES(l)     (1+(l?l->vlen/cols:0))
 #define FIXNEXT(pos)  while(isutf8 && ISFILL(pos.l->c[pos.o]) && ++pos.o < pos.l->len)
 #define FIXPREV(pos)  while(isutf8 && ISFILL(pos.l->c[pos.o]) && --pos.o > 0)
 #define LINES2        (lines - (titlewin==NULL?0:1))
@@ -248,7 +249,7 @@ f_center(const Arg *arg) {
 	int i=LINES2/2;
 	
 	scrline=fcur.l;
-	while((i -= 1 + scrline->vlen/cols) > 0 && scrline->prev) scrline=scrline->prev;
+	while((i -= VLINES(scrline)) > 0 && scrline->prev) scrline=scrline->prev;
 	statusflags|=S_DirtyScr;
 }
 
@@ -522,10 +523,10 @@ i_addtext(char *buf, Filepos pos){
 	size_t i=0, il=0;
 	char c;
 	Line *l=pos.l, *lnew=NULL;
-	int   o=pos.o, extralines;
+	int   o=pos.o, vlines;
 	Filepos f;
 
-	extralines=l->vlen/cols;
+	vlines=VLINES(l);
 	for(c=buf[0]; c!='\0'; c=buf[++i]){
 		if(c=='\n' || c=='\r') { /* New line */
 			if(((lnew=(Line*)malloc(sizeof(Line))) == NULL) ||
@@ -557,7 +558,7 @@ i_addtext(char *buf, Filepos pos){
 	}
 	i_calcvlen(l);
 	f.l=l; f.o=il+o;
-	if(lnew!=NULL || extralines != pos.l->vlen/cols) statusflags|=S_DirtyDown;
+	if(lnew!=NULL || vlines != VLINES(pos.l)) statusflags|=S_DirtyDown;
 	return f;
 }
 
@@ -620,16 +621,16 @@ i_dirtyrange(Line *l0, Line *l1) {
 	Filepos pos0, pos1;
 	pos0.l=l0, pos1.l=l1, pos0.o=pos1.o=0;
 	i_sortpos(&pos0, &pos1);
-	for(;pos0.l;pos0.l=pos0.l->next) pos0.l->dirty=TRUE;
+	for(;pos0.l != pos1.l->next ;pos0.l=pos0.l->next) pos0.l->dirty=TRUE;
 }
 
 void /* pos0 and pos1 MUST be in order, fcur and fsel integrity is NOT assured after deletion */
 i_deltext(Filepos pos0, Filepos pos1) {
 	Line *ldel=NULL;
-	int extralines=0;
+	int vlines=1;
 
 	if(pos0.l==pos1.l) {
-		extralines=(pos0.l->vlen)/cols;
+		vlines=VLINES(pos0.l);
 		memmove(pos0.l->c+pos0.o, pos0.l->c+pos1.o, (pos0.l->len - pos1.o));
 		pos0.l->dirty=TRUE;
 		pos0.l->len-=(pos1.o-pos0.o);
@@ -650,7 +651,7 @@ i_deltext(Filepos pos0, Filepos pos1) {
 			free(ldel);
 		}
 	}
-	if(ldel!=NULL || extralines != pos0.l->vlen/cols) statusflags|=S_DirtyDown;
+	if(ldel!=NULL || vlines != VLINES(pos0.l)) statusflags|=S_DirtyDown;
 }
 
 void
@@ -837,13 +838,13 @@ i_mouse(void) {
 	if(!wmouse_trafo(textwin, &ev.y, &ev.x, FALSE)) return;
 	if(ev.bstate & (REPORT_MOUSE_POSITION|BUTTON1_RELEASED)) {
 		fcur=i_scrtofpos(ev.x, ev.y); /* Select text */
-		if(ev.bstate & BUTTON1_RELEASED) mousemask(defmmask,NULL);
+		//if(ev.bstate & BUTTON1_RELEASED) mousemask(defmmask,NULL);
 #ifdef HOOK_SELECT_MOUSE
 		HOOK_SELECT_MOUSE;
 #endif
 	} else if(ev.bstate & (BUTTON1_CLICKED|BUTTON1_PRESSED)) {
 		fsel=fcur=i_scrtofpos(ev.x, ev.y); /* Move cursor */
-		if(ev.bstate & BUTTON1_PRESSED) mousemask(defmmask|REPORT_MOUSE_POSITION,NULL);
+		//if(ev.bstate & BUTTON1_PRESSED) mousemask(defmmask|REPORT_MOUSE_POSITION,NULL);
 	} else if(ev.bstate & (BUTTON1_DOUBLE_CLICKED)) {
 		fsel=fcur=i_scrtofpos(ev.x, ev.y); /* Select word */
 		f_extsel(&(const Arg){.i = ExtWord});
@@ -1031,13 +1032,13 @@ Filepos
 i_scrtofpos(int x, int y) {
 	Filepos pos;
 	Line *l;
-	int irow, ixrow, ivchar, extralines=0;
+	int irow, ixrow, ivchar, vlines=1;
 
 	pos.l=lstline;
 	pos.o=pos.l->len;
-	for(l=scrline, irow=0; l && irow<LINES2; l=l->next, irow+=(extralines+1)) {
-		extralines=(l->vlen / cols);
-		for(ixrow=ivchar=0;ixrow<=extralines && (irow+ixrow)<LINES2;ixrow++)
+	for(l=scrline, irow=0; l && irow<LINES2; l=l->next, irow+=vlines) {
+		vlines=VLINES(l);
+		for(ixrow=ivchar=0;ixrow<vlines && (irow+ixrow)<LINES2;ixrow++)
 			if(irow+ixrow == y) {
 				pos.l=l;
 				pos.o=0;
@@ -1184,13 +1185,13 @@ i_termwininit(void) {
 	wtimeout(textwin, 0);
 	curs_set(1);
 	scrollok(textwin, FALSE);
-	intrflush(NULL, TRUE); /* TODO: test this */
+	//intrflush(NULL, TRUE); /* TODO: test this */
 	mousemask(defmmask, NULL);
 }
 
 void /* This is where everything happens */
 i_update(void) {
-	static int iline, irow, ixrow, ichar, ivchar, i, ifg, ibg, extralines;
+	static int iline, irow, ixrow, ichar, ivchar, i, ifg, ibg, vlines;
 	static int cursor_r, cursor_c;
 	static int lines3; /* How many lines fit on screen */
 	static long int nscr, ncur, nlst; /* Line number for scrline, fcur.l and lstline */
@@ -1213,12 +1214,15 @@ i_update(void) {
 			goto offset_top;
 		}
 	}
-	for(irow=0, l=scrline; l; l=l->next, irow+=(extralines+1)) {
-		extralines=l->vlen/cols;
+	for(irow=0, l=scrline; l; l=l->next, irow+=vlines) {
+		vlines=VLINES(l);
 		if(fcur.l==l) {
-			while(irow+extralines>=LINES2 && scrline->next) {
-				statusflags|=S_DirtyScr; /* TODO: wscrl() ?? */
-				irow -= 1 + scrline->vlen/cols;
+			while(irow+vlines>LINES2 && scrline->next) {
+				//statusflags|=S_DirtyScr; /* TODO: wscrl() ?? */
+				scrollok(textwin, TRUE);
+				wscrl(textwin, VLINES(scrline));
+				scrollok(textwin, FALSE);
+				irow -= VLINES(scrline);
 				if(scrline==fsel.l) selection=!selection; /* We just scrolled past the selection point */
 				scrline=scrline->next;
 				iline++;
@@ -1229,8 +1233,8 @@ i_update(void) {
 	nscr=iline;
 
 	/* Actually update lines on screen */
-	for(irow=lines3=0, l=scrline; irow<LINES2; irow+=(extralines+1), lines3++, iline++) {
-		extralines=(l==NULL ? 0 : (l->vlen / cols) );
+	for(irow=lines3=0, l=scrline; irow<LINES2; irow+=vlines, lines3++, iline++) {
+		vlines=VLINES(l);
 		if(fcur.l==l) {
 			ncur=iline;
 			/* Update screen cursor position */
@@ -1247,7 +1251,7 @@ i_update(void) {
 			if(syntx && l) for(i=0; i<SYN_COLORS; i++)
 				if(regexec(syntx->re[i], l->c, 1, match[i], 0) || match[i][0].rm_so == match[i][0].rm_eo)
 					match[i][0].rm_so=match[i][0].rm_eo=-1;
-			for(ixrow=ichar=ivchar=0; ixrow<=extralines && (irow+ixrow)<LINES2; ixrow++) {
+			for(ixrow=ichar=ivchar=0; ixrow<vlines && (irow+ixrow)<LINES2; ixrow++) {
 				wmove(textwin, (irow+ixrow), (ivchar%cols));
 				while(ivchar<(1+ixrow)*cols) {
 					if(fcur.l==l && ichar==fcur.o) selection=!selection;
@@ -1481,7 +1485,7 @@ m_nextscr(Filepos pos) {
 	int i;
 	Line *l;
 
-	for(i=LINES2,l=pos.l; l->next && i>0; i-=1+l->vlen/cols, l=l->next);
+	for(i=LINES2,l=pos.l; l->next && i>0; i-=VLINES(l), l=l->next);
 	pos.l=l;
 	if(pos.o>pos.l->len) pos.o=pos.l->len;
 	FIXNEXT(pos);
@@ -1493,7 +1497,7 @@ m_prevscr(Filepos pos) {
 	int i;
 	Line *l;
 
-	for(i=LINES2,l=pos.l; l->prev && i>0; i-=1+l->vlen/cols, l=l->prev);
+	for(i=LINES2,l=pos.l; l->prev && i>0; i-=VLINES(l), l=l->prev);
 	pos.l=l;
 	if(pos.o>pos.l->len) pos.o=pos.l->len;
 	FIXNEXT(pos);
