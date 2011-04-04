@@ -29,7 +29,7 @@ Reverse UTF-8 behavior. UTF-8 processing is on by default.
 .B \-v
 Prints version information to standard output, then exits.
 .SH USAGE
-The default key-bindings try to stick to the "emacs-mode" present in modern shells (specifically mksh(1)), which actually differs a bit from what emacs(1) does. External input is handled using dmenu(1) if the DISPLAY environment variable is set, read using sh(1) otherwise.
+The default key-bindings try to stick to the "emacs-mode" present in modern shells (specifically mksh(1)), which actually differs a bit from what emacs(1) does. External input is handled using dmenu(1) if the DISPLAY environment variable is set, read using sh(1) otherwise. Similarly, X11 clipboard interaction occurs through xsel(1) if DISPLAY is set, using a hidden file in the HOME directory otherwise.
 .SS Cursor movement
 Cursor movement bindings can also be used to select text by pressing Ctrl\-g to start a selection (see below)
 .TP
@@ -172,8 +172,7 @@ Toggle read-only status for file.
 .B Meta\-Shift\-s
 Prompt for a file syntax to use.
 .SH SEE ALSO
-.BR sed(1)
-.BR xprop(1)
-.BR zenity(1)
+.BR dmenu(1)
+.BR xsel(1)
 .SH BUGS
 Please report them!
