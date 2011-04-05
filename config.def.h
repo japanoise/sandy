@@ -13,7 +13,7 @@ static const char   spcstr[3]  = { (char)0xC2, (char)0xB7, 0x00 }; /* Middle dot
 
 /* Args to f_spawn */
 #define PROMPT(prompt, default, cmd) { .v = (const char *[]){ "/bin/sh", "-c", \
-	"if [ $DISPLAY ]; then arg=\"`echo \\\"" default "\\\" | dmenu -p " prompt "`\";" \
+	"if [ $DISPLAY ]; then arg=\"`echo \\\"" default "\\\" | dmenu -p '" prompt "'`\";" \
 	"else echo -n '\033[H\033[K\033[7m'; read -p '" prompt " ' arg; fi &&" \
 	"echo " cmd " \"$arg\" > ${SANDY_FIFO}", NULL } }
 
