@@ -394,15 +394,17 @@ f_save(const Arg *arg) {
 	}
 
 	if(i_writefile()) {
-		statusflags^=S_Modified;
+		statusflags&=~S_Modified;
 		for(savestep=0,u=undos; u; u=u->prev, savestep++);
 	}
 }
 
 void
 f_select(const Arg *arg) {
-	fsel=fcur;
+	Filepos tmppos=fcur; /* for f_select(m_tosel) */
+
 	fcur=arg->m(fcur);
+	fsel=tmppos;
 	if(t_sel())
 		statusflags|=S_Selecting;
 	else
