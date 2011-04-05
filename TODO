@@ -12,6 +12,7 @@ In no particular order, at sandy.c:
 - Improve syntax highlight, multiline?
 - Groups Undos
 - Repeat operation (or last pipe at least!)
+- Clarify on undo/redo/repeat
 
 At config.def.h:
 - Bindings!
