@@ -133,6 +133,8 @@ static const Key stdkeys[] = {
 { CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 
 /* File operations */
+{ CONTROL('Q'), { t_mod, 0,    0,   0 },  f_title,     { .v = "WARNING! File not saved! Press META+SHIFT+Q to quit" } },
+{ CONTROL('Q'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
 { META('q'),    { t_mod, 0,    0,   0 },  f_title,     { .v = "WARNING! File not saved!" } },
 { META('q'),    { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
 { META('Q'),    { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
