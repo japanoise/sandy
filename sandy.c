@@ -1206,24 +1206,29 @@ i_update(void) {
 	if(statusflags & S_NeedResize) i_resize();
 
 	/* Check offset */
-	offset_top:
-	for(selection=FALSE, l=scrline->prev, iline=1; l; iline++, l=l->prev) {
+	scrollok(textwin, TRUE); /* Here I scroll */
+	for(selection=FALSE, l=fstline, iline=1; l && scrline->prev && l != scrline; iline++, l=l->next) {
+		if(l==fcur.l) { /* Can't have fcur.l before scrline, move scrline up */
+			while(l!=scrline) {
+				if(VLINES(scrline) > 1) { /* Scrolled through a picky line */
+					statusflags|=S_DirtyScr;
+					scrline=l;
+					break;
+				}
+				wscrl(textwin, -1); /* We now know that VLINES(scrline) is 1, optimize */
+				scrline=scrline->prev;
+			}
+			break;
+		}
 		if(l==fsel.l) /* Selection starts before screen view */
 			selection=!selection;
-		if(l==fcur.l) { /* Can't have fcur.l before scrline */
-			scrline=l;
-			statusflags|=S_DirtyDown; /* TODO: wscrl() ?? */
-			goto offset_top;
-		}
 	}
 	for(irow=0, l=scrline; l; l=l->next, irow+=vlines) {
 		vlines=VLINES(l);
 		if(fcur.l==l) {
-			while(irow+vlines>LINES2 && scrline->next) {
-				//statusflags|=S_DirtyScr; /* TODO: wscrl() ?? */
-				scrollok(textwin, TRUE);
+			while(irow+vlines>LINES2 && scrline->next) { /* Can't have fcur.l after screen end, move scrline down */
+				statusflags|=S_DirtyDown; /* lines with vlines>1 require this */
 				wscrl(textwin, VLINES(scrline));
-				scrollok(textwin, FALSE);
 				irow -= VLINES(scrline);
 				if(scrline==fsel.l) selection=!selection; /* We just scrolled past the selection point */
 				scrline=scrline->next;
@@ -1232,6 +1237,7 @@ i_update(void) {
 			break;
 		}
 	}
+	scrollok(textwin, FALSE);
 	nscr=iline;
 
 	/* Actually update lines on screen */

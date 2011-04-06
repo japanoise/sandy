@@ -5,7 +5,6 @@ In no particular order, at sandy.c:
 - Autoindenting?
 - Number modifier?
 - Smart end? is it really needed?
-- Scroll windows with wscrl?
 - BUG: high CPU usage on continuous resize
 - BUG: Deal with the bigger-than-window line
 - Improve regex search (backwards!!)
