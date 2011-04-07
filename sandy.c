@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <locale.h>
 #include <string.h>
-#include <curses.h>
+#include <ncurses.h>
 
 /* Defines */
 #ifndef PIPESIZ /* This is POSIX magic */
