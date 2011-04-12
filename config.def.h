@@ -99,6 +99,7 @@ static const Key stdkeys[] = {
 { META('x'),    { 0,     0,    0,   0 },  f_extsel,    { .i = ExtAll } },
 { CONTROL('G'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_stay } },
 { CONTROL('G'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Selecting } },
+{ CONTROL('O'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_tosel } }, /* Swap fsel and fcur */
 { META('i'),    { 0,     0,    0,   0 },  f_toggle,    { .i = S_CaseIns } },
 { META('s'),    { t_sel, 0,    0,   0 },  f_pipero,    { .v = "(sed 's/$/\\n/;2q' | (read arg && echo find \"$arg\" > ${SANDY_FIFO}))" } },
 { META('r'),    { t_sel, 0,    0,   0 },  f_pipero,    { .v = "(sed 's/$/\\n/;2q' | (read arg && echo findbw \"$arg\" > ${SANDY_FIFO}))" } },
@@ -179,6 +180,50 @@ static Syntax syntaxes[] = {
 	/* LoMag   */  "^[[:space:]]*#[[:space:]]*(define|include(_next)?|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma)",
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
 	/* LoRed   */  "(\\<[A-Z_][0-9A-Z_]+\\>|\"(\\.|[^\"])*\")",
+	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
+	} },
+
+{"sh", NULL, "\\.sh$", { NULL }, {
+	/* HiRed   */  "",
+	/* HiGreen */  "^[0-9A-Z_]+\\(\\)",
+	/* LoGreen */  "\\<(case|do|done|elif|else|esac|exit|fi|for|function|if|in|local|read|return|select|shift|then|time|until|while)\\>",
+	/* HiMag   */  "",
+	/* LoMag   */  "\"(\\.|[^\"])*\"",
+	/* HiBlue  */  "(\\{|\\}|\\(|\\)|\\;|\\]|\\[|`|\\\\|\\$|<|>|!|=|&|\\|)",
+	/* LoRed   */  "\\$\\{?[0-9A-Z_!@#$*?-]+\\}?",
+	/* LoBlue  */  "#.*$",
+	} },
+
+{"makefile", NULL, "(Makefile[^/]*|\\.mk)$", { NULL }, {
+	/* HiRed   */  "",
+	/* HiGreen */  "",
+	/* LoGreen */  "\\$+[{(][a-zA-Z0-9_-]+[})]",
+	/* HiMag   */  "\\<(if|ifeq|else|endif)\\>",
+	/* LoMag   */  "",
+	/* HiBlue  */  "^[^ 	]+:",
+	/* LoRed   */  "[:=]",
+	/* LoBlue  */  "#.*$",
+	} },
+
+{"man", NULL, "\\.[1-9]x?$", { NULL }, {
+	/* HiRed   */  "\\.(BR?|I[PR]?).*$",
+	/* HiGreen */  "",
+	/* LoGreen */  "\\.(S|T)H.*$",
+	/* HiMag   */  "\\.(br|DS|RS|RE|PD)",
+	/* LoMag   */  "(\\.(S|T)H|\\.TP)",
+	/* HiBlue  */  "\\.(BR?|I[PR]?|PP)",
+	/* LoRed   */  "",
+	/* LoBlue  */  "\\\\f[BIPR]",
+	} },
+
+{"java", NULL, "\\.java$", { NULL }, {
+	/* HiRed   */  "\\<[A-Z_][0-9A-Z_]+\\>",
+	/* HiGreen */  "\\<(for|if|while|do|else|case|default|switch)\\>",
+	/* LoGreen */  "\\<(boolean|byte|char|double|float|int|long|new|short|this|transient|void|true|false|null)\\>",
+	/* HiMag   */  "\\<(try|catch|throw|finally|continue|break|return)\\>",
+	/* LoMag   */  "\\<(abstract|class|extends|final|implements|import|instanceof|interface|native|package|private|protected|public|static|strictfp|super|synchronized|throws|volatile)\\>",
+	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
+	/* LoRed   */  "\"(\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 };

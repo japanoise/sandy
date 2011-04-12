@@ -432,7 +432,7 @@ void
 f_syntax(const Arg *arg) {
 	int i, j;
 
-	statusflags&=~S_Selecting;
+	statusflags=(statusflags|S_DirtyScr)&~S_Selecting;
 	for(i=0; i<LENGTH(syntaxes); i++)
 		if((arg && arg->v) ? !strcmp(arg->v, syntaxes[i].name)
 				   : !regexec(syntaxes[i].file_re, filename, 1, NULL, 0)) {
