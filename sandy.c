@@ -42,57 +42,57 @@
 
 /* Typedefs */
 typedef struct Line Line;
-struct Line {
-	char *c;
-	size_t len;
-	size_t vlen;
-	int mul;
-	bool dirty;
-	Line *next;
-	Line *prev;
+struct Line {        /** The internal representation of a line of text */
+	char *c;     /* Line content */
+	size_t len;  /* Line byte length */
+	size_t vlen; /* On-screen line-length */
+	int mul;     /* How many times LINSIZ is c malloc'd to */
+	bool dirty;  /* Should I repaint on screen? */
+	Line *next;  /* Next line, NULL if I'm last */
+	Line *prev;  /* Previous line, NULL if I'm first */
 };
 
-typedef struct {
-	Line *l;
-	int o;
+typedef struct { /** A position in the file */
+	Line *l; /* Line */
+	int o;   /* Offset inside the line */
 } Filepos;
 
-typedef union {
+typedef union { /** An argument to a f_* function, generic */
 	int i;
 	const void *v;
 	Filepos (*m)(Filepos);
 } Arg;
 
-typedef struct {
-	int  keyv[6];
-	bool (*test[4])(void);
-	void (*func)(const Arg *arg);
-	const Arg arg;
+typedef struct {                      /** A keybinding */
+	int  keyv[6];                 /* Keyv to press */
+	bool (*test[4])(void);        /* Conditions to match */
+	void (*func)(const Arg *arg); /* Function to perform */
+	const Arg arg;                /* Argument to func() */
 } Key;
 
-typedef struct {
-	regex_t *re;
-	const char *re_text;
-	bool (*test[2])(void);
-	void (*func)(const Arg *arg);
+typedef struct {                      /** A command read at the fifo */
+	regex_t *re;                  /* (internal) */
+	const char *re_text;          /* A regex to match the command, must have a parentheses group for argument */
+	bool (*test[2])(void);        /* Conditions to match */
+	void (*func)(const Arg *arg); /* Function to perform, argument is determined as arg->v from regex above */
 } Command;
 
 #define SYN_COLORS 8
-typedef struct {
-	char    *name;
-	regex_t *file_re;
-	char    *file_re_text;
-	regex_t *re[SYN_COLORS];
-	char    *re_text[SYN_COLORS];
+typedef struct {                      /** A syntax definition */
+	char    *name;                /* Syntax name */
+	regex_t *file_re;             /* (internal) */
+	char    *file_re_text;        /* Apply to files matching this regex */
+	regex_t *re[SYN_COLORS];      /* (internal) */
+	char    *re_text[SYN_COLORS]; /* Apply colors (in order) matching these regexes */
 } Syntax;
 
 typedef struct Undo Undo;
-struct Undo {
-	char flags;
-	unsigned long startl, endl;
-	int starto, endo;
-	char *str;
-	Undo *prev;
+struct Undo {                       /** Undo information */
+	char flags;                 /* Flags: is insert/delete?, should concatenate with next undo/redo? */
+	unsigned long startl, endl; /* Line number for undo/redo start and end */
+	int starto, endo;           /* Character offset for undo/redo start and end */
+	char *str;                  /* Content (added or deleted text) */
+	Undo *prev;                 /* Previous undo/redo in the ring */
 };
 
 /* ENUMS */
@@ -100,10 +100,10 @@ struct Undo {
 enum { DefFG, CurFG, SelFG, SpcFG, CtrlFG, Syn0FG, Syn1FG, Syn2FG, Syn3FG, Syn4FG, Syn5FG, Syn6FG, Syn7FG, LastFG, };
 enum { DefBG, CurBG, SelBG, /* Warning: BGs MUST have a matching FG */     LastBG, };
 
-/* f_extsel arg->i */
+/* arg->i to use in f_extsel() */
 enum { ExtDefault, ExtWord, ExtLines, ExtAll, };
 
-/* Environment variables */
+/* Environment variables index */
 enum { EnvFind, EnvPipe, EnvLine, EnvOffset, EnvFile, EnvSyntax, EnvFifo, EnvLast, };
 
 enum { /* To use in statusflags */
@@ -136,31 +136,31 @@ static const char *envs[EnvLast] = {
 };
 
 /* Variables */
-static Line     *fstline;
-static Line     *lstline;
-static Line     *scrline; /* First line seen in window */
-static Filepos   fsel;    /* Selection mark on file */
-static Filepos   fcur;    /* Insert position on file */
-static Filepos   fmrk = { NULL, 0 }; /* Mark */
-static Syntax   *syntx = NULL;
-static int       sel_re = 0; /* We keep 2 REs so regexec does not segfault */
-static regex_t  *find_res[2];
-static char     *fifopath = NULL;
-static char     *filename = NULL;
-static char     *title    = NULL;
-static char     *tmptitle = NULL;
-static char     *tsl_str  = NULL;
-static char     *fsl_str  = NULL;
-static WINDOW   *titlewin = NULL;
-static WINDOW   *textwin  = NULL;
-static Undo     *undos;
-static Undo     *redos;
-static int       textattrs[LastFG][LastBG];
-static int       savestep=0;
-static int       fifofd;
-static int       statusflags=S_Running;
-static int       cols, lines; /* To use instead of COLS and LINES */
-static mmask_t   defmmask=ALL_MOUSE_EVENTS;
+static Line     *fstline;                   /* First line*/
+static Line     *lstline;                   /* Last line */
+static Line     *scrline;                   /* First line seen on screen */
+static Filepos   fsel;                      /* Selection point on file */
+static Filepos   fcur;                      /* Insert position on file, cursor, current position */
+static Filepos   fmrk = { NULL, 0 };        /* Mark */
+static Syntax   *syntx = NULL;              /* Current syntax */
+static regex_t  *find_res[2];               /* Compiled regex for search term */
+static int       sel_re = 0;                /* Index to the above, we keep 2 REs so regexec does not segfault */
+static char     *fifopath = NULL;           /* Path to command fifo */
+static char     *filename = NULL;           /* Path to file loade on buffer */
+static char     *title    = NULL;           /* Screen title */
+static char     *tmptitle = NULL;           /* Screen title, temporary */
+static char     *tsl_str  = NULL;           /* String to print to status line */
+static char     *fsl_str  = NULL;           /* String to come back from status line */
+static WINDOW   *titlewin = NULL;           /* Title ncurses window, NULL if there is a status line */
+static WINDOW   *textwin  = NULL;           /* Main ncurses window */
+static Undo     *undos;                     /* Undo ring */
+static Undo     *redos;                     /* Redo ring */
+static int       textattrs[LastFG][LastBG]; /* Text attributes for each color pair */
+static int       savestep=0;                /* Index to determine the need to save in undo/redo action */
+static int       fifofd;                    /* Command fifo file descriptor */
+static int       statusflags=S_Running;     /* Status flags, very important, OR'd (see enums above) */
+static int       cols, lines;               /* Ncurses: to use instead of COLS and LINES, wise */
+static mmask_t   defmmask=ALL_MOUSE_EVENTS; /* Ncurses: mouse event mask */
 
 /* Functions */
 /* f_* functions can be linked to an action or keybinding */
@@ -244,7 +244,10 @@ static Filepos m_tosel(Filepos);
 
 #include "config.h"
 
-void
+/* F_* FUNCTIONS
+   Can be linked to an action or keybinding. Always return void and take const Arg* */
+
+void /* Make cursor line the one in the middle of the screen if possible */
 f_center(const Arg *arg) {
 	int i=LINES2/2;
 	
@@ -253,7 +256,7 @@ f_center(const Arg *arg) {
 	statusflags|=S_DirtyScr;
 }
 
-void /* Your responsibility: call only if t_rw() */
+void /* Delete text as per arg->m. Your responsibility: call only if t_rw() */
 f_delete(const Arg *arg) {
 	char *s;
 	Filepos pos0=fcur, pos1=arg->m(fcur);
@@ -270,7 +273,7 @@ f_delete(const Arg *arg) {
 	statusflags&=~S_Selecting;
 }
 
-void
+void /* Extend the selection as per arg->i (see enums above) */
 f_extsel(const Arg *arg) {
 	i_sortpos(&fsel, &fcur);
 	switch(arg->i) {
@@ -298,17 +301,17 @@ f_extsel(const Arg *arg) {
 	statusflags|=S_Selecting;
 }
 
-void
+void /* Find arg->v regex backwards, same as last if arg->v == NULL */
 f_findbw(const Arg *arg) {
 	if(i_setfindterm((char*)arg->v)) i_find(FALSE);
 }
 
-void
+void /* Find arg->v regex forward, same as last if arg->v == NULL */
 f_findfw(const Arg *arg) {
 	if(i_setfindterm((char*)arg->v)) i_find(TRUE);
 }
 
-void /* Your responsibility: call only if t_rw() */
+void /* Insert arg->v at cursor position, deleting the selection if any. Your responsibility: call only if t_rw() */
 f_insert(const Arg *arg) {
 	bool killsel;
 
@@ -324,7 +327,7 @@ f_insert(const Arg *arg) {
 	statusflags&=~S_Selecting;
 }
 
-void
+void /* Go to atoi(arg->v) line */
 f_line(const Arg *arg) {
 	long int l;
 	
@@ -335,18 +338,18 @@ f_line(const Arg *arg) {
 	if(! (statusflags & S_Selecting)) fsel=fcur;
 }
 
-void
+void /* Set mark at current position */
 f_mark(const Arg *arg) {
 	fmrk=fcur;
 }
 
-void
+void /* Move cursor or extend/shrink selection as per arg->m */
 f_move(const Arg *arg) {
 	fcur=arg->m(fcur);
 	if(! (statusflags & S_Selecting)) fsel=fcur;
 }
 
-void
+void /* Got to atoi(arg->v) position in the current line */
 f_offset(const Arg *arg) {
 	fcur.o=atoi(arg->v);
 	if(fcur.o>fcur.l->len) fcur.o=fcur.l->len;
@@ -354,20 +357,20 @@ f_offset(const Arg *arg) {
 	if(! (statusflags & S_Selecting)) fsel=fcur;
 }
 
-void /* Your responsibility: call only if t_rw() */
+void /* Pipe selection through arg->v external command. Your responsibility: call only if t_rw() */
 f_pipe(const Arg *arg) {
 	i_pipetext(arg->v);
 	statusflags|=S_Modified;
 }
 
-void /* Your responsibility: call only if t_rw() */
+void /* Pipe full lines including the selection through arg->v external command. Your responsibility: call only if t_rw() */
 f_pipelines(const Arg *arg) {
 	f_extsel(&(const Arg){ .i = ExtLines });
 	i_pipetext(arg->v);
 	statusflags|=S_Modified;
 }
 
-void
+void /* Pipe selection through arg->v external command but do not update text on screen */
 f_pipero(const Arg *arg) {
 	char oldsf=statusflags;
 
@@ -376,7 +379,7 @@ f_pipero(const Arg *arg) {
 	statusflags=oldsf&(~S_Selecting);
 }
 
-void /* Your responsibility: call only if t_mod() */
+void /* Save file with arg->v filename, same if NULL. Your responsibility: call only if t_mod() */
 f_save(const Arg *arg) {
 	Undo *u;
 
@@ -399,7 +402,7 @@ f_save(const Arg *arg) {
 	}
 }
 
-void
+void /* Move cursor as per arg->m, without moving the selection point */
 f_select(const Arg *arg) {
 	Filepos tmppos=fcur; /* for f_select(m_tosel) */
 
@@ -411,7 +414,7 @@ f_select(const Arg *arg) {
 		statusflags&=~S_Selecting;
 }
 
-void 
+void /* Spawn (char **)arg->v */
 f_spawn(const Arg *arg) {
 	int pid=-1;
 	statusflags&=~S_Selecting;
@@ -428,7 +431,7 @@ f_spawn(const Arg *arg) {
 	redrawwin(textwin);
 }
 
-void
+void /* Set syntax with name arg->v */
 f_syntax(const Arg *arg) {
 	int i, j;
 
@@ -450,13 +453,13 @@ f_syntax(const Arg *arg) {
 	setenv(envs[EnvSyntax], "none", 1);
 }
 
-void
+void /* Set screen title to arg->v, useful for debug or errors */
 f_title(const Arg *arg) {
 	tmptitle=(char*)arg->v;
 	statusflags&=~S_Selecting;
 }
 
-void /* Careful with this one! */
+void /* Toggle the arg->i statusflag. Careful with this one! */
 f_toggle(const Arg *arg) {
 	statusflags^=(char)arg->i;
  
@@ -468,7 +471,7 @@ f_toggle(const Arg *arg) {
 	}
 }
 
-void /* Your responsibility: call only if t_undo() / t_redo() */
+void /* Undo last action if arg->i >=0, redo otherwise. Your responsibility: call only if t_undo() / t_redo() */
 f_undo(const Arg *arg) {
 	Filepos start, end;
 	const bool r=(arg->i < 0);
@@ -503,7 +506,10 @@ f_undo(const Arg *arg) {
 		statusflags|=S_Modified;
 }
 
-void
+/* I_* FUNCTIONS
+   Called internally from the program code */
+
+void /* Add undo information to the undo ring */
 i_addundo(bool ins, Filepos start, Filepos end, char *s) {
 	Undo *u;
 
@@ -520,7 +526,7 @@ i_addundo(bool ins, Filepos start, Filepos end, char *s) {
 	undos     = u;
 }
 
-Filepos
+Filepos /* Add text at pos, return the position after the inserted text */
 i_addtext(char *buf, Filepos pos){
 	size_t i=0, il=0;
 	char c;
@@ -564,7 +570,7 @@ i_addtext(char *buf, Filepos pos){
 	return f;
 }
 
-void
+void /* Take a file position and advance it o bytes */
 i_advpos(Filepos *pos, int o) {
 	int toeol;
 
@@ -580,7 +586,7 @@ i_advpos(Filepos *pos, int o) {
 	FIXNEXT((*pos)); /* This should not be needed here */
 }
 
-void
+void /* Update the vlen value of a Line */
 i_calcvlen(Line *l) {
 	int i;
 
@@ -589,7 +595,7 @@ i_calcvlen(Line *l) {
 		l->vlen+=VLEN(l->c[i], l->vlen);
 }
 
-void
+void /* Cleanup and exit */
 i_cleanup(int sig) {
 	int i;
 
@@ -612,13 +618,13 @@ i_cleanup(int sig) {
 	exit(sig>0?1:0);
 }
 
-void
+void /* Quit less gracefully */
 i_die(char *str) {
 	fputs(str, stderr);
 	exit(1);
 }
 
-void
+void /* The lines between l0 and l1 should be redrawn to the screen */
 i_dirtyrange(Line *l0, Line *l1) {
 	Filepos pos0, pos1;
 	pos0.l=l0, pos1.l=l1, pos0.o=pos1.o=0;
@@ -626,7 +632,7 @@ i_dirtyrange(Line *l0, Line *l1) {
 	for(;pos0.l != pos1.l->next ;pos0.l=pos0.l->next) pos0.l->dirty=TRUE;
 }
 
-void /* pos0 and pos1 MUST be in order, fcur and fsel integrity is NOT assured after deletion */
+void /* Delete text between pos0 and pos1, which MUST be in order, fcur and fsel integrity is NOT assured after deletion */
 i_deltext(Filepos pos0, Filepos pos1) {
 	Line *ldel=NULL;
 	int vlines=1;
@@ -656,7 +662,7 @@ i_deltext(Filepos pos0, Filepos pos1) {
 	if(ldel!=NULL || vlines != VLINES(pos0.l)) statusflags|=S_DirtyDown;
 }
 
-void
+void /* Main editing loop */
 i_edit(void) {
 	int ch, i;
 	char c[7];
@@ -746,7 +752,7 @@ i_edit(void) {
 	}
 }
 
-void
+void /* Find text as per the current find_res[sel_re] */
 i_find(bool fw) {
 	char *s;
 	int wp, _so, _eo, status;
@@ -788,7 +794,7 @@ i_find(bool fw) {
 	}
 }
 
-char* /* pos0 and pos1 MUST be in order; you MUST free the returned string after use */
+char* /* Return text between pos0 and pos1, which MUST be in order; you MUST free the returned string after use */
 i_gettext(Filepos pos0, Filepos pos1) {
 	Line *l;
 	unsigned long long i=1;
@@ -805,7 +811,7 @@ i_gettext(Filepos pos0, Filepos pos1) {
 	return buf;
 }
 
-void
+void /* Kill the content of the &list undo/redo ring */
 i_killundos(Undo **list) {
 	Undo *u;
 
@@ -816,7 +822,7 @@ i_killundos(Undo **list) {
 	}
 }
 
-Line*
+Line* /* Return the Line numbered il */
 i_lineat(unsigned long il) {
 	unsigned long i;
 	Line *l;
@@ -824,7 +830,7 @@ i_lineat(unsigned long il) {
 	return l;
 }
 
-unsigned long
+unsigned long /* Return the line number for l0 */
 i_lineno(Line *l0) {
 	unsigned long i;
 	Line *l;
@@ -832,7 +838,7 @@ i_lineno(Line *l0) {
 	return i;
 }
 
-void
+void /* Process mouse input */
 i_mouse(void) {
 	static MEVENT ev;
 
@@ -856,7 +862,7 @@ i_mouse(void) {
 	}
 }
 
-void
+void /* Pipe text between fsel and fcur through cmd */
 i_pipetext(const char *cmd) {
 	struct timeval tv;
 	char *s = NULL;
@@ -948,7 +954,7 @@ i_pipetext(const char *cmd) {
 	if (s) free(s);
 }
 
-void
+void /* Read the command fifo */
 i_readfifo(void) {
 	char *buf, *tofree;
 	regmatch_t result[2];
@@ -977,7 +983,7 @@ i_readfifo(void) {
 	if((fifofd = open(fifopath, O_RDONLY | O_NONBLOCK)) == -1) i_die("Can't open FIFO for reading.\n");;
 }
 
-void
+void /* Read file content into the Line* structure */
 i_readfile(char *fname) {
 	int fd;
 	ssize_t n;
@@ -1009,7 +1015,7 @@ i_readfile(char *fname) {
 	fsel=fcur;
 }
 
-void /* handle term resize, ugly */
+void /* Handle term resize, ugly. TODO: clean and change */
 i_resize(void) {
 	const char *tty;
 	int fd, result;
@@ -1030,7 +1036,7 @@ i_resize(void) {
 	statusflags|=S_DirtyScr;
 }
 
-Filepos
+Filepos /* Return file position at screen coordinates x and y*/
 i_scrtofpos(int x, int y) {
 	Filepos pos;
 	Line *l;
@@ -1055,8 +1061,8 @@ i_scrtofpos(int x, int y) {
 	return pos;
 }
 
-bool
-i_setfindterm(char *find_term) { /* Return TRUE if find term is a valid RE or NULL */
+bool /* Update find_res[sel_re] and sel_re. Return TRUE if find term is a valid RE or NULL */
+i_setfindterm(char *find_term) {
 	statusflags&=~S_Selecting;
 	if(find_term) { /* Modify find term; use NULL to repeat search */
 		if(!regcomp(find_res[sel_re^1], find_term, REG_EXTENDED|REG_NEWLINE|(statusflags&S_CaseIns?REG_ICASE:0))) {
@@ -1067,7 +1073,7 @@ i_setfindterm(char *find_term) { /* Return TRUE if find term is a valid RE or NU
 	} else return TRUE;
 }
 
-void
+void /* Setup everything */
 i_setup(void){
 	int i, j;
 	Line *l=NULL;
@@ -1134,12 +1140,12 @@ i_setup(void){
 	fsel=fcur;
 }
 
-void
+void /* Process SIGWINCH, the terminal has been resized */
 i_sigwinch(int unused) {
 	statusflags|=S_NeedResize;
 }
 
-void
+void /* Exchange pos0 and pos1 if not in order */
 i_sortpos(Filepos *pos0, Filepos *pos1) {
 	Filepos p;
 
@@ -1153,7 +1159,7 @@ i_sortpos(Filepos *pos0, Filepos *pos1) {
 	}
 }
 
-char* /* you MUST free the returned string after use */
+char* /* Duplicate string, you MUST free the returned string after use */
 i_strdup(const char *src) {
 	char *dst;
 	int i;
@@ -1164,7 +1170,7 @@ i_strdup(const char *src) {
 	return memcpy(dst, src, i);
 }
 
-void
+void /* Initialize terminal */
 i_termwininit(void) {
 	raw();
 	noecho();
@@ -1191,7 +1197,7 @@ i_termwininit(void) {
 	mousemask(defmmask, NULL);
 }
 
-void /* This is where everything happens */
+void /* Repaint screen. This is where everything happens. Apologies for the unnecessary complexity and length */
 i_update(void) {
 	static int iline, irow, ixrow, ichar, ivchar, i, ifg, ibg, vlines;
 	static int cursor_r, cursor_c;
@@ -1365,13 +1371,13 @@ i_update(void) {
 	doupdate();
 }
 
-void
+void /* Print help, die */
 i_usage(void) {
 	fputs("sandy - simple editor\n", stderr);
 	i_die("usage: sandy [-r] [-u] [-t TABSTOP] [-s SYNTAX] [file | -]\n");
 }
 
-bool
+bool /* Write buffer to disk */
 i_writefile(void) {
 	int fd;
 	bool wok=TRUE;
@@ -1391,14 +1397,17 @@ i_writefile(void) {
 	return wok;
 }
 
-Filepos
+/* M_* FUNCTIONS
+   Represent a cursor motion, always take a Filepos and return an update Filepos */
+
+Filepos /* Go to beginning of file */
 m_bof(Filepos pos) {
 	pos.l=fstline;
 	pos.o=0;
 	return pos;
 }
 
-Filepos
+Filepos /* Go to (smart) beginning of line */
 m_bol(Filepos pos) {
 	Filepos vbol=pos;
 
@@ -1408,20 +1417,20 @@ m_bol(Filepos pos) {
 	return vbol;
 }
 
-Filepos
+Filepos /* Go to end of file */
 m_eof(Filepos pos) {
 	pos.l=lstline;
 	pos.o=pos.l->len;
 	return pos;
 }
 
-Filepos
+Filepos /* Go to end of line */
 m_eol(Filepos pos){
 	pos.o=pos.l->len;
 	return pos;
 }
 
-Filepos
+Filepos /* Advance one char, next line if needed */
 m_nextchar(Filepos pos) {
 	if(pos.o < pos.l->len) {
 		pos.o++;
@@ -1433,7 +1442,7 @@ m_nextchar(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Backup one char, previous line if needed */
 m_prevchar(Filepos pos) {
 	if(pos.o > 0) {
 		pos.o--;
@@ -1445,7 +1454,7 @@ m_prevchar(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Advance one word, next line if needed */
 m_nextword(Filepos pos) {
 	Filepos p0;
 
@@ -1456,7 +1465,7 @@ m_nextword(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Backup one word, previous line if needed */
 m_prevword(Filepos pos) {
 	Filepos p0;
 
@@ -1468,7 +1477,7 @@ m_prevword(Filepos pos) {
 	return p0;
 }
 
-Filepos
+Filepos /* Advance one line, or to eol if at last line */
 m_nextline(Filepos pos) {
 	if(pos.l->next){
 		pos.l=pos.l->next;
@@ -1478,7 +1487,7 @@ m_nextline(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Backup one line, or to bol if at first line */
 m_prevline(Filepos pos) {
 	if(pos.l->prev){
 		pos.l=pos.l->prev;
@@ -1488,7 +1497,7 @@ m_prevline(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Advance as many lines as the screen size */
 m_nextscr(Filepos pos) {
 	int i;
 	Line *l;
@@ -1500,7 +1509,7 @@ m_nextscr(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Backup as many lines as the screen size */
 m_prevscr(Filepos pos) {
 	int i;
 	Line *l;
@@ -1512,12 +1521,12 @@ m_prevscr(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Do not move */
 m_stay(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Go to mark if valid, stay otherwise */
 m_tomark(Filepos pos) {
 	/* Be extra careful when moving to mark, as it might not exist */
 	Line *l;
@@ -1531,47 +1540,51 @@ m_tomark(Filepos pos) {
 	return pos;
 }
 
-Filepos
+Filepos /* Go to selection point */
 m_tosel(Filepos pos) {
 	return fsel;
 }
 
-bool
+/* T_* FUNCTIONS
+   Used to test for conditions, take no arguments and return bool. */
+
+bool /* TRUE at the beginning of line */
 t_bol(void) {
 	return (fcur.o == 0);
 }
 
-bool
+bool /* TRUE at end of line */
 t_eol(void) {
 	return (fcur.o == fcur.l->len);
 }
 
-bool
+bool /* TRUE if the file has been modified */
 t_mod(void) {
 	return (statusflags & S_Modified);
 }
 
-bool
+bool /* TRUE if the file is writable */
 t_rw(void) {
 	return !(statusflags & S_Readonly);
 }
 
-bool
+bool /* TRUE if there is anything to redo */
 t_redo(void) {
 	return (redos != NULL);
 }
 
-bool
+bool /* TRUE if any text is selected */
 t_sel(void) {
 	return !(fcur.l==fsel.l && fcur.o == fsel.o);
 }
 
-bool
+bool /* TRUE if there is anything to undo */
 t_undo(void) {
 	return (undos != NULL);
 }
 
-int
+
+int /* main() starts everything else */
 main(int argc, char **argv){
 	int i;
 	char *local_syn = NULL;
