@@ -620,6 +620,7 @@ i_cleanup(int sig) {
 
 void /* Quit less gracefully */
 i_die(char *str) {
+	reset_shell_mode();
 	fputs(str, stderr);
 	exit(1);
 }
@@ -629,7 +630,7 @@ i_dirtyrange(Line *l0, Line *l1) {
 	Filepos pos0, pos1;
 	pos0.l=l0, pos1.l=l1, pos0.o=pos1.o=0;
 	i_sortpos(&pos0, &pos1);
-	for(;pos0.l != pos1.l->next ;pos0.l=pos0.l->next) pos0.l->dirty=TRUE;
+	for(; pos0.l && pos0.l != pos1.l->next; pos0.l=pos0.l->next) pos0.l->dirty=TRUE;
 }
 
 void /* Delete text between pos0 and pos1, which MUST be in order, fcur and fsel integrity is NOT assured after deletion */
