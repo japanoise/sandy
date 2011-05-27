@@ -1,5 +1,5 @@
 /* Things unlikely to be changed, yet still in the config.h file */
-static       bool            isutf8     = TRUE; /* Default, reverse with -u */
+static const bool            isutf8     = TRUE;
 static const char            fifobase[] = "/tmp/sandyfifo.";
 
 /* TAB and Space character aspect on screen */
@@ -70,10 +70,6 @@ static const Key stdkeys[] = {
 /* You probably know these as TAB, Enter and Return */
 { CONTROL('I'), { t_sel, t_rw, 0,   0 },  f_pipelines, { .v = "sed 's/^/\\t/'" } },
 { CONTROL('I'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\t" } },
-{ CONTROL('J'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
-{ CONTROL('J'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
-{ CONTROL('M'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
-{ CONTROL('M'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 
 /* Cursor movement, also when selecting */
 { CONTROL('A'), { 0,     0,    0,   0 },  f_move,      { .m = m_bol } },
@@ -179,7 +175,7 @@ static Syntax syntaxes[] = {
 	/* HiMag   */  "\\<(goto|continue|break|return)\\>",
 	/* LoMag   */  "^[[:space:]]*#[[:space:]]*(define|include(_next)?|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma)",
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
-	/* LoRed   */  "(\\<[A-Z_][0-9A-Z_]+\\>|\"(\\.|[^\"])*\")",
+	/* LoRed   */  "(\\<[A-Z_][0-9A-Z_]+\\>|\"(\\\\.|[^\"])*\")",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 
@@ -188,7 +184,7 @@ static Syntax syntaxes[] = {
 	/* HiGreen */  "^[0-9A-Z_]+\\(\\)",
 	/* LoGreen */  "\\<(case|do|done|elif|else|esac|exit|fi|for|function|if|in|local|read|return|select|shift|then|time|until|while)\\>",
 	/* HiMag   */  "",
-	/* LoMag   */  "\"(\\.|[^\"])*\"",
+	/* LoMag   */  "\"(\\\\.|[^\"])*\"",
 	/* HiBlue  */  "(\\{|\\}|\\(|\\)|\\;|\\]|\\[|`|\\\\|\\$|<|>|!|=|&|\\|)",
 	/* LoRed   */  "\\$\\{?[0-9A-Z_!@#$*?-]+\\}?",
 	/* LoBlue  */  "#.*$",
@@ -223,7 +219,7 @@ static Syntax syntaxes[] = {
 	/* HiMag   */  "\\<(try|catch|throw|finally|continue|break|return)\\>",
 	/* LoMag   */  "\\<(abstract|class|extends|final|implements|import|instanceof|interface|native|package|private|protected|public|static|strictfp|super|synchronized|throws|volatile)\\>",
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
-	/* LoRed   */  "\"(\\.|[^\"])*\"",
+	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 };

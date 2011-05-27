@@ -1596,8 +1596,6 @@ main(int argc, char **argv){
 	for(i = 1; i < argc && argv[i][0] == '-' && argv[i][1] != '\0'; i++) {
 		if(!strcmp(argv[i], "-r")) {
 			statusflags|=S_Readonly;
-		} else if(!strcmp(argv[i], "-u")) {
-			isutf8=!isutf8;
 		} else if(!strcmp(argv[i], "-t")) {
 			if(++i < argc) {
 				tabstop=atoi(argv[i]);
