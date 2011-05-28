@@ -441,7 +441,7 @@ f_syntax(const Arg *arg) {
 				   : !regexec(syntaxes[i].file_re, filename, 1, NULL, 0)) {
 			for(j=0; j<SYN_COLORS; j++) {
 				if(syntx && syntx->re[j]) regfree(syntx->re[j]);
-				if(regcomp(syntaxes[i].re[j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) i_die("Faulty regex.\n");
+				if(regcomp(syntaxes[i].re[j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) ; /* i_die("Faulty regex.\n"); */ /* Until regexes are universal */
 			}
 			syntx=&syntaxes[i];
 			setenv(envs[EnvSyntax], syntx->name, 1);
@@ -1093,12 +1093,12 @@ i_setup(void){
 
 	for(i=0; i<LENGTH(cmds); i++) {
 		if((cmds[i].re=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
-		if(regcomp(cmds[i].re, cmds[i].re_text, REG_EXTENDED|REG_ICASE|REG_NEWLINE)) i_die("Faulty regex.\n");
+		if(regcomp(cmds[i].re, cmds[i].re_text, REG_EXTENDED|REG_ICASE|REG_NEWLINE)) ; /* i_die("Faulty regex.\n"); */ /* Comment out until regexes are universal */
 	}
 
 	for(i=0; i<LENGTH(syntaxes); i++) {
 		if((syntaxes[i].file_re=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
-		if(regcomp(syntaxes[i].file_re, syntaxes[i].file_re_text, REG_EXTENDED|REG_NOSUB|REG_ICASE|REG_NEWLINE)) i_die("Faulty regex.\n");
+		if(regcomp(syntaxes[i].file_re, syntaxes[i].file_re_text, REG_EXTENDED|REG_NOSUB|REG_ICASE|REG_NEWLINE)) ; /* i_die("Faulty regex.\n"); */ /* Comment out until regexes are universal */
 		for(j=0; j<SYN_COLORS; j++)
 			if((syntaxes[i].re[j]=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
 	}
@@ -1107,8 +1107,8 @@ i_setup(void){
 	if(mkfifo(fifopath, (S_IRUSR|S_IWUSR)) !=0) i_die("FIFO already exists.\n");
 	if((fifofd = open(fifopath, O_RDONLY | O_NONBLOCK)) == -1) i_die("Can't open FIFO for reading.\n");;
 	setenv(envs[EnvFifo], fifopath, 1);
-	regcomp(find_res[0], "", 0);
-	regcomp(find_res[1], "", 0);
+	/*regcomp(find_res[0], "", 0);
+	regcomp(find_res[1], "", 0); */ /* Comment out until regexes are universal */
 
 	initscr();
 	if(has_colors()) {
