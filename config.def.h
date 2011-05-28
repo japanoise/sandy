@@ -70,6 +70,10 @@ static const Key stdkeys[] = {
 /* You probably know these as TAB, Enter and Return */
 { CONTROL('I'), { t_sel, t_rw, 0,   0 },  f_pipelines, { .v = "sed 's/^/\\t/'" } },
 { CONTROL('I'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\t" } },
+{ CONTROL('J'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
+{ CONTROL('J'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
+{ CONTROL('M'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
+{ CONTROL('M'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 
 /* Cursor movement, also when selecting */
 { CONTROL('A'), { 0,     0,    0,   0 },  f_move,      { .m = m_bol } },
@@ -170,19 +174,19 @@ static Command cmds[] = { /* Use only f_ funcs that take Arg.v */
 static Syntax syntaxes[] = {
 {"c", NULL, "\\.(c(pp|xx)?|h(pp|xx)?|cc)$", { NULL }, {
 	/* HiRed   */  "",
-	/* HiGreen */  "\\<(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)\\>",
-	/* LoGreen */  "\\<(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)\\>",
-	/* HiMag   */  "\\<(goto|continue|break|return)\\>",
+	/* HiGreen */  "\\b(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)\\b",
+	/* LoGreen */  "\\b(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)\\b",
+	/* HiMag   */  "\\b(goto|continue|break|return)\\b",
 	/* LoMag   */  "^[[:space:]]*#[[:space:]]*(define|include(_next)?|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma)",
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
-	/* LoRed   */  "(\\<[A-Z_][0-9A-Z_]+\\>|\"(\\\\.|[^\"])*\")",
+	/* LoRed   */  "(\\b[A-Z_][0-9A-Z_]+\\b|\"(\\\\.|[^\"])*\")",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 
 {"sh", NULL, "\\.sh$", { NULL }, {
 	/* HiRed   */  "",
 	/* HiGreen */  "^[0-9A-Z_]+\\(\\)",
-	/* LoGreen */  "\\<(case|do|done|elif|else|esac|exit|fi|for|function|if|in|local|read|return|select|shift|then|time|until|while)\\>",
+	/* LoGreen */  "\\b(case|do|done|elif|else|esac|exit|fi|for|function|if|in|local|read|return|select|shift|then|time|until|while)\\b",
 	/* HiMag   */  "",
 	/* LoMag   */  "\"(\\\\.|[^\"])*\"",
 	/* HiBlue  */  "(\\{|\\}|\\(|\\)|\\;|\\]|\\[|`|\\\\|\\$|<|>|!|=|&|\\|)",
@@ -194,7 +198,7 @@ static Syntax syntaxes[] = {
 	/* HiRed   */  "",
 	/* HiGreen */  "",
 	/* LoGreen */  "\\$+[{(][a-zA-Z0-9_-]+[})]",
-	/* HiMag   */  "\\<(if|ifeq|else|endif)\\>",
+	/* HiMag   */  "\\b(if|ifeq|else|endif)\\b",
 	/* LoMag   */  "",
 	/* HiBlue  */  "^[^ 	]+:",
 	/* LoRed   */  "[:=]",
@@ -213,11 +217,11 @@ static Syntax syntaxes[] = {
 	} },
 
 {"java", NULL, "\\.java$", { NULL }, {
-	/* HiRed   */  "\\<[A-Z_][0-9A-Z_]+\\>",
-	/* HiGreen */  "\\<(for|if|while|do|else|case|default|switch)\\>",
-	/* LoGreen */  "\\<(boolean|byte|char|double|float|int|long|new|short|this|transient|void|true|false|null)\\>",
-	/* HiMag   */  "\\<(try|catch|throw|finally|continue|break|return)\\>",
-	/* LoMag   */  "\\<(abstract|class|extends|final|implements|import|instanceof|interface|native|package|private|protected|public|static|strictfp|super|synchronized|throws|volatile)\\>",
+	/* HiRed   */  "\\b[A-Z_][0-9A-Z_]+\\b",
+	/* HiGreen */  "\\b(for|if|while|do|else|case|default|switch)\\b",
+	/* LoGreen */  "\\b(boolean|byte|char|double|float|int|long|new|short|this|transient|void|true|false|null)\\b",
+	/* HiMag   */  "\\b(try|catch|throw|finally|continue|break|return)\\b",
+	/* LoMag   */  "\\b(abstract|class|extends|final|implements|import|instanceof|interface|native|package|private|protected|public|static|strictfp|super|synchronized|throws|volatile)\\b",
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
 	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
