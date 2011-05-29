@@ -1216,8 +1216,9 @@ i_update(void) {
 	scrollok(textwin, TRUE); /* Here I scroll */
 	for(selection=FALSE, l=fstline, iline=1; l && scrline->prev && l != scrline; iline++, l=l->next) {
 		if(l==fcur.l) { /* Can't have fcur.l before scrline, move scrline up */
+			i=0;
 			while(l!=scrline) {
-				if(VLINES(scrline) > 1) { /* Scrolled through a picky line */
+				if(VLINES(scrline) > 1 || ++i > LINES2) { /* Scrolled by a picky line or through the whole view, skip */
 					statusflags|=S_DirtyScr;
 					scrline=l;
 					break;
@@ -1233,8 +1234,8 @@ i_update(void) {
 	for(irow=0, l=scrline; l; l=l->next, irow+=vlines) {
 		vlines=VLINES(l);
 		if(fcur.l==l) {
+			statusflags|=S_DirtyDown; /* lines with vlines>1 require this */
 			while(irow+vlines>LINES2 && scrline->next) { /* Can't have fcur.l after screen end, move scrline down */
-				statusflags|=S_DirtyDown; /* lines with vlines>1 require this */
 				wscrl(textwin, VLINES(scrline));
 				irow -= VLINES(scrline);
 				if(scrline==fsel.l) selection=!selection; /* We just scrolled past the selection point */
