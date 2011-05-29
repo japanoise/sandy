@@ -1506,8 +1506,7 @@ m_nextscr(Filepos pos) {
 
 	for(i=LINES2,l=pos.l; l->next && i>0; i-=VLINES(l), l=l->next);
 	pos.l=l;
-	if(pos.o>pos.l->len) pos.o=pos.l->len;
-	FIXNEXT(pos);
+	pos.o=pos.l->len;
 	return pos;
 }
 
@@ -1518,8 +1517,7 @@ m_prevscr(Filepos pos) {
 
 	for(i=LINES2,l=pos.l; l->prev && i>0; i-=VLINES(l), l=l->prev);
 	pos.l=l;
-	if(pos.o>pos.l->len) pos.o=pos.l->len;
-	FIXNEXT(pos);
+	pos.o=0;
 	return pos;
 }
 
