@@ -2,6 +2,10 @@
 static const bool            isutf8     = TRUE;
 static const char            fifobase[] = "/tmp/sandyfifo.";
 
+/* Some cosmetic settings */
+#define HLCUR 0
+#define SHOW_SPECIAL 0
+
 /* TAB and Space character aspect on screen */
 static       int    tabstop    = 8; /* Not const, as it may be changed via param */
 #if SHOW_SPECIAL
@@ -239,7 +243,11 @@ static Syntax syntaxes[] = {
 /* Colors */
 static const short  fgcolors[LastFG] = {
         [DefFG]  = -1,
+#if HLCUR
         [CurFG]  = COLOR_BLACK,
+#else
+        [CurFG]  = -1,
+#endif
         [SelFG]  = COLOR_BLACK,
         [SpcFG]  = COLOR_WHITE,
         [CtrlFG] = COLOR_RED,
@@ -287,7 +295,11 @@ static const int bwattrs[LastFG] = {
 
 static const short  bgcolors[LastBG] = {
         [DefBG] = -1,
+#if HLCUR
         [CurBG] = COLOR_CYAN,
+#else
+        [CurBG] = -1,
+#endif
         [SelBG] = COLOR_YELLOW,
 };
 
