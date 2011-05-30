@@ -180,6 +180,7 @@ static void f_pipero(const Arg*);
 static void f_save(const Arg*);
 static void f_select(const Arg*);
 static void f_spawn(const Arg*);
+static void f_suspend(const Arg*);
 static void f_syntax(const Arg *arg);
 static void f_title(const Arg *arg);
 static void f_toggle(const Arg *arg);
@@ -209,6 +210,7 @@ static Filepos        i_scrtofpos(int, int);
 static bool           i_setfindterm(char*);
 static void           i_setup(void);
 static void           i_sigwinch(int);
+static void           i_sigcont(int);
 static void           i_sortpos(Filepos*, Filepos*);
 static char          *i_strdup(const char*);
 static void           i_termwininit(void);
@@ -429,6 +431,12 @@ f_spawn(const Arg *arg) {
 	reset_prog_mode();
 	if(titlewin) redrawwin(titlewin);
 	redrawwin(textwin);
+}
+
+void
+f_suspend(const Arg *arg) {
+	signal (SIGCONT, i_sigcont);
+	kill(getpid(), SIGSTOP);
 }
 
 void /* Set syntax with name arg->v */
@@ -1144,6 +1152,12 @@ i_setup(void){
 void /* Process SIGWINCH, the terminal has been resized */
 i_sigwinch(int unused) {
 	statusflags|=S_NeedResize;
+}
+
+void /* Process SIGCONT to return after STOP */
+i_sigcont(int unused) {
+	cols = 0;
+	i_resize();
 }
 
 void /* Exchange pos0 and pos1 if not in order */

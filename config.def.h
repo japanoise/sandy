@@ -155,8 +155,8 @@ static const Key stdkeys[] = {
 { CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipe,      FROMCLIP },
 { CONTROL('C'), { t_sel, 0,    0,   0 },  f_pipero,    TOCLIP },
 
-/* Windows-like crap TO REMOVE */
-{ CONTROL('Z'), { t_undo,0,    0,   0 },  f_undo,      { .i =  1 } },
+/* This is really fine */
+{ CONTROL('Z'), { 0,     0,    0,   0 },  f_suspend,   { 0 } },
 
 /* Others */
 { CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0 } },
