@@ -1,4 +1,5 @@
 In no particular order, at sandy.c:
+- Bind ^Z to stop, handle sigcont
 - Rework m_*word
 - Create m_*vline
 - Bracket matching?

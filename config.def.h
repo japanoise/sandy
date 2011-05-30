@@ -13,8 +13,9 @@ static const char   spcstr[3]  = { (char)0xC2, (char)0xB7, 0x00 }; /* Middle dot
 
 /* Args to f_spawn */
 #define PROMPT(prompt, default, cmd) { .v = (const char *[]){ "/bin/sh", "-c", \
-	"if [ $DISPLAY ]; then arg=\"`echo \\\"" default "\\\" | dmenu -p '" prompt "'`\";" \
-	"else echo -n '\033[H\033[K\033[7m'; read -p '" prompt " ' arg; fi &&" \
+	"xsel -h >/dev/null 2>&1 || DISPLAY=\"\";"\
+	"if [ -n \"$DISPLAY\" ]; then arg=\"`echo \\\"" default "\\\" | dmenu -p '" prompt "'`\";" \
+	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \"; read arg; fi &&" \
 	"echo " cmd " \"$arg\" > ${SANDY_FIFO}", NULL } }
 
 #define FIND   PROMPT("Find:",        "${SANDY_FIND}",   "find")
@@ -25,10 +26,11 @@ static const char   spcstr[3]  = { (char)0xC2, (char)0xB7, 0x00 }; /* Middle dot
 #define SYNTAX PROMPT("Syntax:",      "${SANDY_SYNTAX}", "syntax")
 
 /* Args to f_pipe / f_pipero */
-#define TOCLIP   { .v = "if [ $DISPLAY ] ; then xsel -ib; else cat > $HOME/.sandy.clipboard ; fi" }
-#define FROMCLIP { .v = "if [ $DISPLAY ] ; then xsel -ob; else cat   $HOME/.sandy.clipboard ; fi" }
-#define TOSEL    { .v = "if [ $DISPLAY ] ; then xsel -i;  else cat > $HOME/.sandy.selection ; fi" }
-#define FROMSEL  { .v = "if [ $DISPLAY ] ; then xsel -o;  else cat   $HOME/.sandy.selection ; fi" }
+/* TODO: make sandy-sel to wrap xsel or standalone */
+#define TOCLIP   { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -ib || cat > ~/.sandy.clipboard" }
+#define FROMCLIP { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -ob || cat ~/.sandy.clipboard" }
+#define TOSEL    { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -i  || cat > ~/.sandy.selection" }
+#define FROMSEL  { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -o  || cat ~/.sandy.selection" }
 
 /* Hooks are launched from the main code */
 #define HOOK_SAVE_NO_FILE f_spawn (&(const Arg)SAVEAS)
