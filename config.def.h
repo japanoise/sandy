@@ -4,8 +4,14 @@ static const char            fifobase[] = "/tmp/sandyfifo.";
 
 /* TAB and Space character aspect on screen */
 static       int    tabstop    = 8; /* Not const, as it may be changed via param */
+#if SHOW_SPECIAL
 static const char   tabstr[3]  = { (char)0xC2, (char)0xBB, 0x00 }; /* Double right arrow */
 static const char   spcstr[3]  = { (char)0xC2, (char)0xB7, 0x00 }; /* Middle dot */
+/* TODO: show newline character too (as $) */
+#else
+static const char   tabstr[2]  = { ' ', 0 }; 
+static const char   spcstr[2]  = { ' ', 0 }; 
+#endif
 
 /* Paths */
 //static const char   systempath[]  = "/etc/sandy";
