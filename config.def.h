@@ -1,29 +1,28 @@
+/* A simplified way to customize */
+#define HILIGHT_CURRENT 1
+#define SHOW_NONPRINT   0
+#define HILIGHT_SYNTAX  1 /* TODO: implement this */
+
 /* Things unlikely to be changed, yet still in the config.h file */
-static const bool            isutf8     = TRUE;
-static const char            fifobase[] = "/tmp/sandyfifo.";
-
-/* Some cosmetic settings */
-#define HLCUR 0
-#define SHOW_SPECIAL 0
-
-/* TAB and Space character aspect on screen */
+static const bool   isutf8     = TRUE;
+static const char   fifobase[] = "/tmp/sandyfifo.";
 static       int    tabstop    = 8; /* Not const, as it may be changed via param */
-#if SHOW_SPECIAL
+/* static const char   systempath[]  = "/etc/sandy"; */
+/* static const char   userpath[]    = ".sandy"; */ /* Relative to $HOME */
+
+#if SHOW_NONPRINT /* TODO: show newline character too (as $) */
 static const char   tabstr[3]  = { (char)0xC2, (char)0xBB, 0x00 }; /* Double right arrow */
 static const char   spcstr[3]  = { (char)0xC2, (char)0xB7, 0x00 }; /* Middle dot */
-/* TODO: show newline character too (as $) */
+static const char   nlstr[2]   = { '$', 0x00 }; /* '$' is tradition for EOL */
 #else
-static const char   tabstr[2]  = { ' ', 0 }; 
-static const char   spcstr[2]  = { ' ', 0 }; 
+static const char   tabstr[2]  = { ' ', 0 };
+static const char   spcstr[2]  = { ' ', 0 };
+static const char   nlstr[1]   = { 0 };
 #endif
-
-/* Paths */
-//static const char   systempath[]  = "/etc/sandy";
-//static const char   userpath[]    = ".sandy"; /* Relative to $HOME */
 
 /* Args to f_spawn */
 #define PROMPT(prompt, default, cmd) { .v = (const char *[]){ "/bin/sh", "-c", \
-	"xsel -h >/dev/null 2>&1 || DISPLAY=\"\";"\
+	"dmenu -v >/dev/null 2>&1 || DISPLAY=\"\";"\
 	"if [ -n \"$DISPLAY\" ]; then arg=\"`echo \\\"" default "\\\" | dmenu -p '" prompt "'`\";" \
 	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \"; read arg; fi &&" \
 	"echo " cmd " \"$arg\" > ${SANDY_FIFO}", NULL } }
@@ -45,8 +44,8 @@ static const char   spcstr[2]  = { ' ', 0 };
 /* Hooks are launched from the main code */
 #define HOOK_SAVE_NO_FILE f_spawn (&(const Arg)SAVEAS)
 #define HOOK_SELECT_MOUSE f_pipero(&(const Arg)TOSEL)
-#undef  HOOK_PRE_DELETE   /* This affects every delete */
-#undef  HOOK_SELECT_ALL   /* Do not bother */
+#undef  HOOK_DELETE_ALL   /* This affects every delete */
+#undef  HOOK_SELECT_ALL   /* This affects every selection */
 
 /* Key-bindings and stuff */
 /* WARNING: use CONTROL(ch) ONLY with '@', (caps)A-Z, '[', '\', ']', '^', '_' or '?' */
@@ -159,10 +158,12 @@ static const Key stdkeys[] = {
 { CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipe,      FROMCLIP },
 { CONTROL('C'), { t_sel, 0,    0,   0 },  f_pipero,    TOCLIP },
 
-/* This is really fine */
-{ CONTROL('Z'), { 0,     0,    0,   0 },  f_suspend,   { 0 } },
+/* Undo / Redo */
+{ CONTROL('_'), { t_undo,t_rw, 0,   0 },  f_undo,      { .i = +1 } },
+{ CONTROL('^'), { t_redo,t_rw, 0,   0 },  f_undo,      { .i = -1 } },
 
 /* Others */
+{ CONTROL('Z'), { 0,     0,    0,   0 },  f_suspend,   { 0 } },
 { CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0 } },
 { CONTROL('V'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_InsEsc } },
 { META('R'),    { 0,     0,    0,   0 },  f_toggle,    { .i = S_Readonly } },
@@ -183,22 +184,24 @@ static Command cmds[] = { /* Use only f_ funcs that take Arg.v */
 };
 
 /* Syntax color definition */
+#define B "(^| |\t|\\(|\\)|\\[|\\]|\\{|\\}|$)"
+
 static Syntax syntaxes[] = {
 {"c", NULL, "\\.(c(pp|xx)?|h(pp|xx)?|cc)$", { NULL }, {
 	/* HiRed   */  "",
-	/* HiGreen */  "\\b(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)\\b",
-	/* LoGreen */  "\\b(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)\\b",
-	/* HiMag   */  "\\b(goto|continue|break|return)\\b",
-	/* LoMag   */  "^[[:space:]]*#[[:space:]]*(define|include(_next)?|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma)",
+	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)"B,
+	/* LoGreen */  B"(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)"B,
+	/* HiMag   */  B"(goto|continue|break|return)"B,
+	/* LoMag   */  "(^#(define|include(_next)?|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma))|"B"\\<[A-Z_][0-9A-Z_]+\\>"B"",
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
-	/* LoRed   */  "(\\b[A-Z_][0-9A-Z_]+\\b|\"(\\\\.|[^\"])*\")",
+	/* LoRed   */  "(\"(\\\\.|[^\"])*\")",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 
 {"sh", NULL, "\\.sh$", { NULL }, {
 	/* HiRed   */  "",
 	/* HiGreen */  "^[0-9A-Z_]+\\(\\)",
-	/* LoGreen */  "\\b(case|do|done|elif|else|esac|exit|fi|for|function|if|in|local|read|return|select|shift|then|time|until|while)\\b",
+	/* LoGreen */  B"(case|do|done|elif|else|esac|exit|fi|for|function|if|in|local|read|return|select|shift|then|time|until|while)"B,
 	/* HiMag   */  "",
 	/* LoMag   */  "\"(\\\\.|[^\"])*\"",
 	/* HiBlue  */  "(\\{|\\}|\\(|\\)|\\;|\\]|\\[|`|\\\\|\\$|<|>|!|=|&|\\|)",
@@ -210,7 +213,7 @@ static Syntax syntaxes[] = {
 	/* HiRed   */  "",
 	/* HiGreen */  "",
 	/* LoGreen */  "\\$+[{(][a-zA-Z0-9_-]+[})]",
-	/* HiMag   */  "\\b(if|ifeq|else|endif)\\b",
+	/* HiMag   */  B"(if|ifeq|else|endif)"B,
 	/* LoMag   */  "",
 	/* HiBlue  */  "^[^ 	]+:",
 	/* LoRed   */  "[:=]",
@@ -228,12 +231,23 @@ static Syntax syntaxes[] = {
 	/* LoBlue  */  "\\\\f[BIPR]",
 	} },
 
+{"vala", NULL, "\\.(vapi|vala)$", { NULL }, {
+	/* HiRed   */  B"[A-Z_][0-9A-Z_]+\\>",
+	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|get|set|value|out|ref|enum)"B,
+	/* LoGreen */  B"(uint|uint8|uint16|uint32|uint64|bool|byte|ssize_t|size_t|char|double|string|float|int|long|short|this|base|transient|void|true|false|null|unowned|owned)"B,
+	/* HiMag   */  B"(try|catch|throw|finally|continue|break|return|new|sizeof|signal|delegate)"B,
+	/* LoMag   */  B"(abstract|class|final|implements|import|instanceof|interface|using|private|public|static|strictfp|super|throws)"B,
+	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
+	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
+	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
+	} },
+
 {"java", NULL, "\\.java$", { NULL }, {
-	/* HiRed   */  "\\b[A-Z_][0-9A-Z_]+\\b",
-	/* HiGreen */  "\\b(for|if|while|do|else|case|default|switch)\\b",
-	/* LoGreen */  "\\b(boolean|byte|char|double|float|int|long|new|short|this|transient|void|true|false|null)\\b",
-	/* HiMag   */  "\\b(try|catch|throw|finally|continue|break|return)\\b",
-	/* LoMag   */  "\\b(abstract|class|extends|final|implements|import|instanceof|interface|native|package|private|protected|public|static|strictfp|super|synchronized|throws|volatile)\\b",
+	/* HiRed   */  B"[A-Z_][0-9A-Z_]+\\>",
+	/* HiGreen */  B"(for|if|while|do|else|case|default|switch)"B,
+	/* LoGreen */  B"(boolean|byte|char|double|float|int|long|short|transient|void|true|false|null)"B,
+	/* HiMag   */  B"(try|catch|throw|finally|continue|break|return|new)"B,
+	/* LoMag   */  B"(abstract|class|extends|final|implements|import|instanceof|interface|native|package|private|protected|public|static|strictfp|this|super|synchronized|throws|volatile)"B,
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
 	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
@@ -242,64 +256,56 @@ static Syntax syntaxes[] = {
 
 /* Colors */
 static const short  fgcolors[LastFG] = {
-        [DefFG]  = -1,
-#if HLCUR
-        [CurFG]  = COLOR_BLACK,
-#else
-        [CurFG]  = -1,
-#endif
-        [SelFG]  = COLOR_BLACK,
-        [SpcFG]  = COLOR_WHITE,
-        [CtrlFG] = COLOR_RED,
-        [Syn0FG] = COLOR_RED,
-        [Syn1FG] = COLOR_GREEN,
-        [Syn2FG] = COLOR_GREEN,
-        [Syn3FG] = COLOR_MAGENTA,
-        [Syn4FG] = COLOR_MAGENTA,
-        [Syn5FG] = COLOR_BLUE,
-        [Syn6FG] = COLOR_RED,
-        [Syn7FG] = COLOR_BLUE,
+	[DefFG]  = -1,
+	[CurFG]  = (HILIGHT_CURRENT?COLOR_BLACK:-1),
+	[SelFG]  = COLOR_BLACK,
+	[SpcFG]  = COLOR_WHITE,
+	[CtrlFG] = COLOR_RED,
+	[Syn0FG] = COLOR_RED,
+	[Syn1FG] = COLOR_GREEN,
+	[Syn2FG] = COLOR_GREEN,
+	[Syn3FG] = COLOR_MAGENTA,
+	[Syn4FG] = COLOR_MAGENTA,
+	[Syn5FG] = COLOR_BLUE,
+	[Syn6FG] = COLOR_RED,
+	[Syn7FG] = COLOR_BLUE,
 };
 
 static const int colorattrs[LastFG] = {
-        [DefFG]  = 0,
-        [CurFG]  = 0,
-        [SelFG]  = 0,
-        [SpcFG]  = A_DIM,
-        [CtrlFG] = A_DIM,
-        [Syn0FG] = A_BOLD,
-        [Syn1FG] = A_BOLD,
-        [Syn2FG] = 0,
-        [Syn3FG] = A_BOLD,
-        [Syn4FG] = 0,
-        [Syn5FG] = A_BOLD,
-        [Syn6FG] = 0,
-        [Syn7FG] = 0,
+	[DefFG]  = 0,
+	[CurFG]  = 0,
+	[SelFG]  = 0,
+	[SpcFG]  = A_DIM,
+	[CtrlFG] = A_DIM,
+	[Syn0FG] = A_BOLD,
+	[Syn1FG] = A_BOLD,
+	[Syn2FG] = 0,
+	[Syn3FG] = A_BOLD,
+	[Syn4FG] = 0,
+	[Syn5FG] = A_BOLD,
+	[Syn6FG] = 0,
+	[Syn7FG] = 0,
 };
 
 static const int bwattrs[LastFG] = {
-        [DefFG]  = 0,
-        [CurFG]  = 0,
-        [SelFG]  = A_REVERSE,
-        [SpcFG]  = A_DIM,
-        [CtrlFG] = A_DIM,
-        [Syn0FG] = A_BOLD,
-        [Syn1FG] = A_BOLD,
-        [Syn2FG] = A_BOLD,
-        [Syn3FG] = A_BOLD,
-        [Syn4FG] = A_BOLD,
-        [Syn5FG] = A_BOLD,
-        [Syn6FG] = A_BOLD,
-        [Syn7FG] = A_BOLD,
+	[DefFG]  = 0,
+	[CurFG]  = 0,
+	[SelFG]  = A_REVERSE,
+	[SpcFG]  = A_DIM,
+	[CtrlFG] = A_DIM,
+	[Syn0FG] = A_BOLD,
+	[Syn1FG] = A_BOLD,
+	[Syn2FG] = A_BOLD,
+	[Syn3FG] = A_BOLD,
+	[Syn4FG] = A_BOLD,
+	[Syn5FG] = A_BOLD,
+	[Syn6FG] = A_BOLD,
+	[Syn7FG] = A_BOLD,
 };
 
 static const short  bgcolors[LastBG] = {
-        [DefBG] = -1,
-#if HLCUR
-        [CurBG] = COLOR_CYAN,
-#else
-        [CurBG] = -1,
-#endif
-        [SelBG] = COLOR_YELLOW,
+	[DefBG] = -1,
+	[CurBG] = (HILIGHT_CURRENT?COLOR_CYAN:-1),
+	[SelBG] = COLOR_YELLOW,
 };
 

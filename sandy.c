@@ -263,8 +263,8 @@ f_delete(const Arg *arg) {
 	char *s;
 	Filepos pos0=fcur, pos1=arg->m(fcur);
 
-#ifdef HOOK_PRE_DELETE
-	HOOK_PRE_DELETE;
+#ifdef HOOK_DELETE_ALL
+	HOOK_DELETE_ALL;
 #endif
 	i_sortpos(&pos0, &pos1);
 	s=i_gettext(pos0, pos1);
@@ -435,6 +435,7 @@ f_spawn(const Arg *arg) {
 
 void
 f_suspend(const Arg *arg) {
+	wclear(textwin);
 	signal (SIGCONT, i_sigcont);
 	kill(getpid(), SIGSTOP);
 }
@@ -449,7 +450,7 @@ f_syntax(const Arg *arg) {
 				   : !regexec(syntaxes[i].file_re, filename, 1, NULL, 0)) {
 			for(j=0; j<SYN_COLORS; j++) {
 				if(syntx && syntx->re[j]) regfree(syntx->re[j]);
-				if(regcomp(syntaxes[i].re[j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) ; /* i_die("Faulty regex.\n"); */ /* Until regexes are universal */
+				if(regcomp(syntaxes[i].re[j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) i_die("Faulty regex.\n");
 			}
 			syntx=&syntaxes[i];
 			setenv(envs[EnvSyntax], syntx->name, 1);
@@ -1101,12 +1102,12 @@ i_setup(void){
 
 	for(i=0; i<LENGTH(cmds); i++) {
 		if((cmds[i].re=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
-		if(regcomp(cmds[i].re, cmds[i].re_text, REG_EXTENDED|REG_ICASE|REG_NEWLINE)) ; /* i_die("Faulty regex.\n"); */ /* Comment out until regexes are universal */
+		if(regcomp(cmds[i].re, cmds[i].re_text, REG_EXTENDED|REG_ICASE|REG_NEWLINE)) i_die("Faulty regex.\n");
 	}
 
 	for(i=0; i<LENGTH(syntaxes); i++) {
 		if((syntaxes[i].file_re=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
-		if(regcomp(syntaxes[i].file_re, syntaxes[i].file_re_text, REG_EXTENDED|REG_NOSUB|REG_ICASE|REG_NEWLINE)) ; /* i_die("Faulty regex.\n"); */ /* Comment out until regexes are universal */
+		if(regcomp(syntaxes[i].file_re, syntaxes[i].file_re_text, REG_EXTENDED|REG_NOSUB|REG_ICASE|REG_NEWLINE)) i_die("Faulty regex.\n");
 		for(j=0; j<SYN_COLORS; j++)
 			if((syntaxes[i].re[j]=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
 	}
@@ -1614,6 +1615,8 @@ main(int argc, char **argv){
 				tabstop=atoi(argv[i]);
 			} else
 				i_usage();
+		} else if(!strcmp(argv[i], "-S")) {
+			local_syn="";
 		} else if(!strcmp(argv[i], "-s")) {
 			if(++i < argc) {
 				local_syn=argv[i];
