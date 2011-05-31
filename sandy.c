@@ -1037,7 +1037,7 @@ i_resize(void) {
 	result = ioctl(fd, TIOCGWINSZ, &ws);
 	close(fd);
 	if(result<0) return;
-	if(cols==ws.ws_col && lines ==ws.ws_row) return;
+	if(cols==ws.ws_col && lines==ws.ws_row) return;
 	cols=ws.ws_col;
 	lines=ws.ws_row;
 	endwin();
