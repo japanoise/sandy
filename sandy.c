@@ -1249,9 +1249,10 @@ i_update(void) {
 	for(irow=0, l=scrline; l; l=l->next, irow+=vlines) {
 		vlines=VLINES(l);
 		if(fcur.l==l) {
-			statusflags|=S_DirtyDown; /* lines with vlines>1 require this */
+			if(irow+vlines>2*LINES2) statusflags|=S_DirtyScr;
+			else statusflags|=S_DirtyDown; /* lines with vlines>1 require this */
 			while(irow+vlines>LINES2 && scrline->next) { /* Can't have fcur.l after screen end, move scrline down */
-				wscrl(textwin, VLINES(scrline));
+				if(!(statusflags&S_DirtyScr)) wscrl(textwin, VLINES(scrline));
 				irow -= VLINES(scrline);
 				if(scrline==fsel.l) selection=!selection; /* We just scrolled past the selection point */
 				scrline=scrline->next;
