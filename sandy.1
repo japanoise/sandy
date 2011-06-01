@@ -4,69 +4,85 @@ sandy \- simple ncurses text editor
 .SH SYNOPSIS
 .B sandy
 .RB [ \-hru ]
-.RB [ \-t\ tabstop ]
-.RB [ \-s\ syntax ]
-.RB [File | -]
+.RB [ \-t
+.IR tabstop ]
+.RB [ \-s
+.IR syntax ]
+.RI [ file |-]
 .SH DESCRIPTION
-sandy is a simple ncurses Text Editor. It loads and saves files and lets you perform basic editing and pipe the selection through arbitrary commands. A small degree of external control can be achieved by writing to a named pipe.
+sandy is a simple ncurses text editor.  It loads and saves files and lets you
+perform basic editing and pipe the selection through arbitrary commands.  A small
+degree of external control can be achieved by writing to a named pipe.
 .SH OPTIONS
 .TP
 .B \-h
-Prints usage information to standard output, then exits.
+Prints usage information to stdout, then exits.
 .TP
 .B \-r
 Opens the selected file read-only.
 .TP
-.B \-s syntax
+.BI \-s " syntax"
 Manually choose the syntax colors.
 .TP
-.B \-t tabstop
+.BI \-t " tabstop"
 Use selected tabstop in characters.
 .TP
 .B \-u
-Reverse UTF-8 behavior. UTF-8 processing is on by default.
+Reverse UTF-8 behavior.  UTF-8 processing is on by default.
 .TP
 .B \-v
-Prints version information to standard output, then exits.
+Prints version information to stdout, then exits.
 .SH USAGE
-The default key-bindings try to stick to the "emacs-mode" present in modern shells (specifically mksh(1)), which actually differs a bit from what emacs(1) does. External input is handled using dmenu(1) if the DISPLAY environment variable is set, read using sh(1) otherwise. Similarly, X11 clipboard interaction occurs through xsel(1) if DISPLAY is set, using a hidden file in the HOME directory otherwise.
+The default key-bindings try to stick to the "emacs-mode" present in modern
+shells (specifically
+.IR mksh (1)),
+which actually differs a bit from what
+.IR emacs (1)
+does.  External input is handled using
+.IR dmenu (1)
+if the DISPLAY environment variable is set, read using
+.IR sh (1)
+otherwise.  Similarly, X11 clipboard interaction occurs through
+.IR xsel (1)
+if DISPLAY is set, using a hidden file in the HOME directory otherwise.
 .SS Cursor movement
-Cursor movement bindings can also be used to select text by pressing Ctrl\-g to start a selection (see below)
+Cursor movement bindings can also be used to select text by pressing Ctrl\-g to
+start a selection (see below)
 .TP
-.B Ctrl\-f or Right
+.BR Ctrl\-f " or " Right
 Move cursor to next char.
 .TP
-.B Ctrl\-b or Left
+.BR Ctrl\-b " or " Left
 Move cursor to previous char.
 .TP
-.B Ctrl\-n or Down
+.BR Ctrl\-n " or " Down
 Move cursor to next line.
 .TP
-.B Ctrl\-p or Up
+.BR Ctrl\-p " or " Up
 Move cursor to previous line.
 .TP
-.B Meta\-f or Shift\-Right
-Move cursor to the end of this or next word.
+.BR Meta\-f " or " Shift\-Right
+Move cursor to the end of this " or " next word.
 .TP
-.B Meta\-b or Shift\-Left
-Move cursor to the start of this or previous word.
+.BR Meta\-b " or " Shift\-Left
+Move cursor to the start of this " or " previous word.
 .TP
-.B Ctrl\-a or Home
+.BR Ctrl\-a " or " Home
 Move cursor to the beginning of the current line.
 .TP
-.B Ctrl\-e or End
+.BR Ctrl\-e " or " End
 Move cursor to the end of the current line.
 .TP
-.B Meta\-, or Prev
+.BR Meta\-, " or " Prev
 Move cursor one full screen up.
 .TP
-.B Meta\-. or Next
+.BR Meta\-. " or " Next
 Move cursor one full screen down.
 .TP
-.B Meta\-< or Shift-Home
+.BR Meta\-< " or " Shift-Home
 Move cursor to the beginning of the file.
 .TP
-.B Meta\-> or Shift-End
+.BR Meta\-> " or " Shift-End
 Move cursor to the end of the file.
 .TP
 .B Meta\-g
@@ -107,12 +123,14 @@ Move to the opposite size of the selection, usually to change it.
 .B Meta\-i
 Toggle case (in)sensitive search.
 .SS Deleting
-If any text is selected, any of these bindings deletes it and, unless Backspace or Delete, moves it to the clipboard. Otherwise they behave as per this text. In read-only mode, these bindings select text instead.
+If any text is selected, any of these bindings deletes it and, unless Backspace
+or Delete, moves it to the clipboard.  Otherwise they behave as per this text.
+In read-only mode, these bindings select text instead.
 .TP
-.B Ctrl\-d or Delete
+.BR Ctrl\-d " or " Delete
 Delete next character.
 .TP
-.B Ctrl\-h or Backspace
+.BR Ctrl\-h " or " Backspace
 Delete previous character.
 .TP
 .B Ctrl\-u
@@ -132,11 +150,11 @@ The mark is a single fixed position in the file that can be used as bookmark.
 .B Meta\-Space
 Set mark in current position.
 .TP
-.B Ctrl\-` or Ctrl\-Space
-Go to mark. Prepend with Ctrl\-g to select to mark.
+.BR Ctrl\-` " or " Ctrl\-Space
+Go to mark.  Prepend with Ctrl\-g to select to mark.
 .SS File operations
 .TP
-.B Ctrl-q or Meta\-q
+.BR Ctrl-q " or " Meta\-q
 Quit if the file has not been modified.
 .TP
 .B Meta\-Shift\-q
@@ -153,10 +171,10 @@ These operations affect the selected text if any.
 .B Ctrl\-\\
 Prompt for a command to pipe text through.
 .TP
-.B Ctrl\-y or Shift-Insert
+.BR Ctrl\-y " or " Shift-Insert
 Replace (paste, yank) with text from the clipboard.
 .TP
-.B Ctrl\-c or Insert
+.BR Ctrl\-c " or " Insert
 Copy to the clipboard.
 .TP
 .B Shift-Delete
@@ -175,7 +193,7 @@ Toggle read-only status for file.
 .B Meta\-Shift\-s
 Prompt for a file syntax to use.
 .SH SEE ALSO
-.BR dmenu(1)
-.BR xsel(1)
+.IR dmenu (1),
+.IR xsel (1)
 .SH BUGS
 Please report them!
