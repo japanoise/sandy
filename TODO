@@ -1,5 +1,4 @@
 In no particular order, at sandy.c:
-- Rework m_*word
 - Create m_*vline
 - Bracket matching?
 - Autoindenting?

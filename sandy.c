@@ -1478,24 +1478,28 @@ m_prevchar(Filepos pos) {
 
 Filepos /* Advance one word, next line if needed */
 m_nextword(Filepos pos) {
-	Filepos p0;
+	Filepos p0=m_nextchar(pos);
 
-	do {
-		p0=pos;
-		pos=m_nextchar(pos);
-	} while((p0.o!=pos.o || p0.l!=pos.l) && !ISWORDBRK(pos.l->c[pos.o]));
+	while((p0.o!=pos.o || p0.l!=pos.l) && ISWORDBRK(pos.l->c[pos.o]))
+		pos=p0, p0=m_nextchar(pos); /* Find the current or next word */
+
+	do
+		p0=pos,	pos=m_nextchar(pos); /* Move to word end */
+	while((p0.o!=pos.o || p0.l!=pos.l) && !ISWORDBRK(pos.l->c[pos.o]));
 	return pos;
 }
 
 Filepos /* Backup one word, previous line if needed */
 m_prevword(Filepos pos) {
-	Filepos p0;
+	Filepos p0=m_prevchar(pos);
 
-	pos=m_prevchar(pos);
-	do {
-		p0=pos;
-		pos=m_prevchar(pos);
-	} while((p0.o!=pos.o || p0.l!=pos.l) && !ISWORDBRK(pos.l->c[pos.o]));
+	if(ISWORDBRK(pos.l->c[pos.o])) while((p0.o!=pos.o || p0.l!=pos.l) && ISWORDBRK(pos.l->c[pos.o]))
+		pos=p0, p0=m_prevchar(pos); /* Find the current or previous word */
+	else pos=p0;
+
+	do
+		p0=pos, pos=m_prevchar(pos); /* Move to word start */
+	while((p0.o!=pos.o || p0.l!=pos.l) && !ISWORDBRK(pos.l->c[pos.o]));
 	return p0;
 }
 
