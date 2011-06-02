@@ -116,6 +116,7 @@ enum { /* To use in statusflags */
 	S_DirtyScr   = 1<<6,
 	S_DirtyDown  = 1<<7,
 	S_NeedResize = 1<<8,
+	S_Warned     = 1<<9,
 };
 
 enum { /* To use in Undo.flags */
@@ -158,7 +159,7 @@ static Undo     *redos;                     /* Redo ring */
 static int       textattrs[LastFG][LastBG]; /* Text attributes for each color pair */
 static int       savestep=0;                /* Index to determine the need to save in undo/redo action */
 static int       fifofd;                    /* Command fifo file descriptor */
-static int       statusflags=S_Running;     /* Status flags, very important, OR'd (see enums above) */
+static long      statusflags=S_Running;     /* Status flags, very important, OR'd (see enums above) */
 static int       cols, lines;               /* Ncurses: to use instead of COLS and LINES, wise */
 static mmask_t   defmmask=ALL_MOUSE_EVENTS; /* Ncurses: mouse event mask */
 
@@ -182,9 +183,9 @@ static void f_select(const Arg*);
 static void f_spawn(const Arg*);
 static void f_suspend(const Arg*);
 static void f_syntax(const Arg *arg);
-static void f_title(const Arg *arg);
 static void f_toggle(const Arg *arg);
 static void f_undo(const Arg*);
+static void f_warn(const Arg *arg);
 
 /* i_* funcions are called from inside the main code only */
 static Filepos        i_addtext(char*, Filepos);
@@ -226,6 +227,7 @@ static bool t_rw(void);
 static bool t_redo(void);
 static bool t_sel(void);
 static bool t_undo(void);
+static bool t_warn(void);
 
 /* m_ functions represent a cursor movement and can be passed in an Arg */
 static Filepos m_bof(Filepos);
@@ -462,12 +464,6 @@ f_syntax(const Arg *arg) {
 	setenv(envs[EnvSyntax], "none", 1);
 }
 
-void /* Set screen title to arg->v, useful for debug or errors */
-f_title(const Arg *arg) {
-	tmptitle=(char*)arg->v;
-	statusflags&=~S_Selecting;
-}
-
 void /* Toggle the arg->i statusflag. Careful with this one! */
 f_toggle(const Arg *arg) {
 	statusflags^=(char)arg->i;
@@ -514,6 +510,13 @@ f_undo(const Arg *arg) {
 	else
 		statusflags|=S_Modified;
 }
+
+void /* Set screen title to arg->v, set warning bit */
+f_warn(const Arg *arg) {
+	tmptitle=(char*)arg->v;
+	statusflags|=S_Warned;
+}
+
 
 /* I_* FUNCTIONS
    Called internally from the program code */
@@ -1356,6 +1359,7 @@ i_update(void) {
 	if(tmptitle)
 		strncpy(title, tmptitle, BUFSIZ);
 	else {
+		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
 		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
 			(filename == NULL?"<No file>":filename),
@@ -1597,6 +1601,11 @@ t_sel(void) {
 bool /* TRUE if there is anything to undo */
 t_undo(void) {
 	return (undos != NULL);
+}
+
+bool /* TRUE if we have warned the file is modified */
+t_warn(void) {
+	return (statusflags & S_Warned);
 }
 
 

@@ -78,66 +78,96 @@ static const Key curskeys[] = { /* Don't use CONTROL or META here */
 
 static const Key stdkeys[] = {
 /* keyv,        test,                     func,        arg */
-{ CONTROL('@'), { 0,     0,    0,   0 },  f_mark,      { 0 } },
-{ CONTROL('A'), { t_bol, 0,    0,   0 },  f_move,      { .m = m_prevscr } },
-{ CONTROL('A'), { 0,     0,    0,   0 },  f_move,      { .m = m_bol } },
-{ CONTROL('B'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar } },
-{ CONTROL('C'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
-{ CONTROL('C'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextword } },
-{ CONTROL('C'), { 0,     0,    0,   0 },  f_select,    { .m = m_nextword } },
-{ CONTROL('D'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
-{ CONTROL('D'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextchar } },
-{ CONTROL('D'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar } },
-{ CONTROL('E'), { t_eol, 0,    0,   0 },  f_move,      { .m = m_nextscr } },
-{ CONTROL('E'), { 0,     0,    0,   0 },  f_move,      { .m = m_eol } },
-{ CONTROL('F'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar } },
-{ CONTROL('G'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_stay } },
-{ CONTROL('G'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Selecting } },
-{ CONTROL('H'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
-{ CONTROL('H'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
-{ CONTROL('H'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar } },
+/* You probably know these as TAB, Enter and Return */
 { CONTROL('I'), { t_sel, t_rw, 0,   0 },  f_pipelines, { .v = "sed 's/^/\\t/'" } },
 { CONTROL('I'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\t" } },
 { CONTROL('J'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { CONTROL('J'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
-{ CONTROL('K'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
-{ CONTROL('K'), { t_eol, t_rw, 0,   0 },  f_delete,    { .m = m_nextchar } },
-{ CONTROL('K'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol } },
-{ CONTROL('K'), { 0,     0,    0,   0 },  f_select,    { .m = m_eol } },
-{ CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0 } },
 { CONTROL('M'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { CONTROL('M'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
+
+/* Cursor movement, also when selecting */
+{ CONTROL('A'), { 0,     0,    0,   0 },  f_move,      { .m = m_bol } },
+{ CONTROL('E'), { 0,     0,    0,   0 },  f_move,      { .m = m_eol } },
+{ CONTROL('F'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar } },
+{ META('f'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextword } },
+{ CONTROL('B'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar } },
+{ META('b'),    { 0,     0,    0,   0 },  f_move,      { .m = m_prevword } },
 { CONTROL('N'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
-{ CONTROL('O'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_tosel } }, /* Swap fsel and fcur */
-{ CONTROL('O'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { CONTROL('P'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevline } },
-{ CONTROL('Q'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
-{ CONTROL('R'), { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
-{ CONTROL('R'), { 0,     0,    0,   0 },  f_spawn,     FINDBW },
-{ CONTROL('S'), { t_sel, 0,    0,   0 },  f_findfw,    { 0 } },
+{ META(','),    { 0,     0,    0,   0 },  f_move,      { .m = m_prevscr } },
+{ META('.'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextscr } },
+{ META('<'),    { 0,     0,    0,   0 },  f_move,      { .m = m_bof } },
+{ META('>'),    { 0,     0,    0,   0 },  f_move,      { .m = m_eof } },
+{ META('g'),    { 0,     0,    0,   0 },  f_spawn,     LINE },
+
+/* Finding and selecting */
 { CONTROL('S'), { 0,     0,    0,   0 },  f_spawn,     FIND },
-{ CONTROL('T'), { 0,     0,    0,   0 },  f_spawn ,    LINE },
+{ CONTROL('R'), { 0,     0,    0,   0 },  f_spawn,     FINDBW },
+{ META('n'),    { 0,     0,    0,   0 },  f_findfw,    { 0 } },
+{ META('p'),    { 0,     0,    0,   0 },  f_findbw,    { 0 } },
+{ CONTROL('X'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault } },
+{ META('x'),    { 0,     0,    0,   0 },  f_extsel,    { .i = ExtAll } },
+{ CONTROL('G'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_stay } },
+{ CONTROL('G'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Selecting } },
+{ CONTROL('O'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_tosel } }, /* Swap fsel and fcur */
+{ META('i'),    { 0,     0,    0,   0 },  f_toggle,    { .i = S_CaseIns } },
+{ META('s'),    { t_sel, 0,    0,   0 },  f_pipero,    { .v = "(sed 's/$/\\n/;2q' | (read arg && echo find \"$arg\" > ${SANDY_FIFO}))" } },
+{ META('r'),    { t_sel, 0,    0,   0 },  f_pipero,    { .v = "(sed 's/$/\\n/;2q' | (read arg && echo findbw \"$arg\" > ${SANDY_FIFO}))" } },
+
+/* Text deletion */
+{ CONTROL('D'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
+{ CONTROL('D'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextchar } },
+{ CONTROL('D'), { 0,     0,    0,   0 },  f_select,    { .m = m_nextchar } },
+{ CONTROL('?'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
+{ CONTROL('?'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
+{ CONTROL('?'), { 0,     0,    0,   0 },  f_select,    { .m = m_prevchar } },
+{ CONTROL('H'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
+{ CONTROL('H'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
+{ CONTROL('H'), { 0,     0,    0,   0 },  f_select,    { .m = m_prevchar } },
 { CONTROL('U'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
 { CONTROL('U'), { t_bol, t_rw, 0,   0 },  f_delete,    { .m = m_prevchar } },
 { CONTROL('U'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_bol } },
 { CONTROL('U'), { 0,     0,    0,   0 },  f_select,    { .m = m_bol } },
-{ CONTROL('V'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_InsEsc } },
+{ CONTROL('K'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
+{ CONTROL('K'), { t_eol, t_rw, 0,   0 },  f_delete,    { .m = m_nextchar } },
+{ CONTROL('K'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol } },
+{ CONTROL('K'), { 0,     0,    0,   0 },  f_select,    { .m = m_eol } },
 { CONTROL('W'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
 { CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword } },
 { CONTROL('W'), { 0,     0,    0,   0 },  f_select,    { .m = m_prevword } },
-{ CONTROL('X'), { t_mod ,0,    0,   0 },  f_save,      { 0 } },
-{ CONTROL('X'), { 0     ,0,    0,   0 },  f_toggle,    { .i = S_Running } },
-{ CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipe,      FROMCLIP },
-{ CONTROL('Z'), { 0     ,0,    0,   0 },  f_suspend,   { 0 } },
-{ CONTROL('['), { 0,     0,    0,   0 },  f_spawn,     SYNTAX },  /* TODO: Sam's? */
+{ META('d'),    { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
+{ META('d'),    { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextword } },
+{ META('d'),    { 0,     0,    0,   0 },  f_select,    { .m = m_nextword } },
+
+/* Mark operation */
+{ META(' '),    { 0,     0,    0,   0 },  f_mark,      { 0 } },
+{ CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
+
+/* File operations */
+{ CONTROL('Q'), { t_mod, 0,    0,   0 },  f_title,     { .v = "WARNING! File not saved! Press META+SHIFT+Q to quit" } },
+{ CONTROL('Q'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
+{ META('q'),    { t_mod, 0,    0,   0 },  f_title,     { .v = "WARNING! File not saved!" } },
+{ META('q'),    { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
+{ META('Q'),    { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
+{ META('w'),    { 0,     0,    0,   0 },  f_save,      { 0 } },
+{ META('W'),    { 0,     0,    0,   0 },  f_spawn,     SAVEAS },
+
+/* Text piping and modification */
 { CONTROL('\\'),{ 0,     0,    0,   0 },  f_spawn,     PIPE },
-{ CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault } },
+{ CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipe,      FROMCLIP },
+{ CONTROL('C'), { t_sel, 0,    0,   0 },  f_pipero,    TOCLIP },
+
+/* Undo / Redo */
+{ CONTROL('_'), { t_undo,t_rw, 0,   0 },  f_undo,      { .i = +1 } },
 { CONTROL('^'), { t_redo,t_rw, 0,   0 },  f_undo,      { .i = -1 } },
-/*{ CONTROL('^'), { t_rw,  0,    0,   0 },  f_undo,      { .i = 0 } }, */ /* TODO: repeat, implement */
-{ CONTROL('_'), { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1 } },
-{ CONTROL('?'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
-{ CONTROL('?'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
-{ CONTROL('?'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar } },
+
+/* Others */
+{ CONTROL('Z'), { 0,     0,    0,   0 },  f_suspend,   { 0 } },
+{ CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0 } },
+{ CONTROL('V'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_InsEsc } },
+{ META('R'),    { 0,     0,    0,   0 },  f_toggle,    { .i = S_Readonly } },
+{ META('S'),    { 0,     0,    0,   0 },  f_spawn,     SYNTAX },
 };
 
 /* Commands read at the fifo */
@@ -211,6 +241,7 @@ static Syntax syntaxes[] = {
 	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
+
 {"java", NULL, "\\.java$", { NULL }, {
 	/* HiRed   */  B"[A-Z_][0-9A-Z_]+\\>",
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch)"B,
