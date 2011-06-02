@@ -3,7 +3,7 @@
 sandy \- simple ncurses text editor
 .SH SYNOPSIS
 .B sandy
-.RB [ \-hru ]
+.RB [ \-hruS ]
 .RB [ \-t
 .IR tabstop ]
 .RB [ \-s
@@ -24,11 +24,11 @@ Opens the selected file read-only.
 .BI \-s " syntax"
 Manually choose the syntax colors.
 .TP
+.B \-S
+Use no syntax colors at all.
+.TP
 .BI \-t " tabstop"
 Use selected tabstop in characters.
-.TP
-.B \-u
-Reverse UTF-8 behavior.  UTF-8 processing is on by default.
 .TP
 .B \-v
 Prints version information to stdout, then exits.
@@ -61,67 +61,51 @@ Move cursor to next line.
 .BR Ctrl\-p " or " Up
 Move cursor to previous line.
 .TP
-.BR Meta\-f " or " Shift\-Right
+.BR Shift\-Right
 Move cursor to the end of this " or " next word.
 .TP
-.BR Meta\-b " or " Shift\-Left
+.BR Shift\-Left
 Move cursor to the start of this " or " previous word.
 .TP
 .BR Ctrl\-a " or " Home
-Move cursor to the beginning of the current line.
+Move cursor to the beginning of the current line " or " if already there, one
+full screen up.
 .TP
 .BR Ctrl\-e " or " End
-Move cursor to the end of the current line.
+Move cursor to the end of the current line " or " if alredy there, one full
+screen down.
 .TP
-.BR Meta\-, " or " Prev
+.BR Prev
 Move cursor one full screen up.
 .TP
-.BR Meta\-. " or " Next
+.BR Next
 Move cursor one full screen down.
 .TP
-.BR Meta\-< " or " Shift-Home
+.BR Shift-Home
 Move cursor to the beginning of the file.
 .TP
-.BR Meta\-> " or " Shift-End
+.BR Shift-End
 Move cursor to the end of the file.
-.TP
-.B Meta\-g
-Prompt for a line number and go there.
 .SS Finding and selecting
 Text is searched and selected using POSIX regular expressions
 .TP
 .B Ctrl\-s
-Prompt for a search regex forward.
-.TP
-.B Meta\-s
-Search forward using the (first line of the) current selection as a regex.
+Prompt for a search regex forward " or " if there is a selection, repeat
+search forward.
 .TP
 .B Ctrl\-r
-Prompt for a search regex backwards.
+Prompt for a search regex backwards " or " if there is a selection, repeat
+search backwards.
 .TP
-.B Meta\-r
-Search backwards using the (first line of the) current selection as a regex.
-.TP
-.B Meta\-n
-Find next occurrence of last search forward.
-.TP
-.B Meta\-p
-Find next occurrence of last search backwards.
-.TP
-.B Ctrl\-x
+.B Ctrl\-\]
 Extend selection to word, line, or full file from current.
-.TP
-.B Meta\-x
-Select full file.
 .TP
 .B Ctrl\-g
 Cancel selection, or start selecting text manually.
 .TP
 .B Ctrl\-o
-Move to the opposite size of the selection, usually to change it.
-.TP
-.B Meta\-i
-Toggle case (in)sensitive search.
+Move to the opposite size of the selection, usually to change it " or " if
+there is no selection, move to mark.
 .SS Deleting
 If any text is selected, any of these bindings deletes it and, unless Backspace
 or Delete, moves it to the clipboard.  Otherwise they behave as per this text.
@@ -142,29 +126,23 @@ Delete to end of line or join with next line.
 .B Ctrl\-w
 Delete to beginning of word or previous word.
 .TP
-.B Meta\-d
+.B Ctrl\-c
 Delete to end of word or next word.
 .SS Mark
 The mark is a single fixed position in the file that can be used as bookmark.
 .TP
-.B Meta\-Space
+.B Ctrl\-Space " or " Ctrl\-`
 Set mark in current position.
 .TP
-.BR Ctrl\-` " or " Ctrl\-Space
-Go to mark.  Prepend with Ctrl\-g to select to mark.
+.BR Ctrl\-o
+Go to mark unless there is a selection.  Prepend with Ctrl\-g to select to mark.
 .SS File operations
 .TP
-.BR Ctrl-q " or " Meta\-q
-Quit if the file has not been modified.
+.BR Ctrl-q
+Quit if the file has not been modified. Repeat to quit unconditionally.
 .TP
-.B Meta\-Shift\-q
-Quit unconditionally.
-.TP
-.B Meta\-w
-Write changes to disk.
-.TP
-.B Meta\-Shift\-w
-Prompt for a different filename to save the file as.
+.B Ctrl\-x
+Write changes to disk " or " quit if the file is not modified.
 .SS Text operations
 These operations affect the selected text if any.
 .TP
@@ -174,7 +152,7 @@ Prompt for a command to pipe text through.
 .BR Ctrl\-y " or " Shift-Insert
 Replace (paste, yank) with text from the clipboard.
 .TP
-.BR Ctrl\-c " or " Insert
+.BR Ctrl\-t " or " Insert
 Copy to the clipboard.
 .TP
 .B Shift-Delete
@@ -182,16 +160,16 @@ Copy to the clipboard and delete.
 .SS Other
 .TP
 .B Ctrl\-l
-Center screen in current line.
+Center screen in current line, refresh.
 .TP
 .B Ctrl\-v
 Insert next character as-is.
 .TP
-.B Meta\-Shift\-r
-Toggle read-only status for file.
+.B Ctrl\-z
+Suspend editor to shell.
 .TP
-.B Meta\-Shift\-s
-Prompt for a file syntax to use.
+.B Ctrl\-\[ " or " Esc
+Prompt for command.
 .SH SEE ALSO
 .IR dmenu (1),
 .IR xsel (1)
