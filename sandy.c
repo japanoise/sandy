@@ -38,7 +38,7 @@
 				      (ch > 0x39 && ch < 0x41) || \
 				      (ch > 0x5A && ch < 0x5F) || \
 				      ch == 0x60 || \
-				      ch > 0x7A)) /* A bit flowed because we assume multibyte UTF8 chars al alnum */
+				      ch > 0x7A)) /* A bit flawed because we assume multibyte UTF8 chars al alnum */
 #define VLEN(ch,col)  (ch==0x09 ? tabstop-(col%tabstop) : (ISCTRL(ch) ? 2: (ISFILL(ch) ? 0: 1)))
 #define VLINES(l)     (1+(l?l->vlen/cols:0))
 #define FIXNEXT(pos)  while(isutf8 && ISFILL(pos.l->c[pos.o]) && ++pos.o < pos.l->len)
@@ -393,7 +393,7 @@ f_save(const Arg *arg) {
 	Undo *u;
 
 	statusflags&=~S_Selecting;
-	if(arg && arg->v) {
+	if(arg && arg->v && *((char*)arg->v)) {
 		free(filename);
 		filename=i_strdup(arg->v);
 		setenv(envs[EnvFile], filename, 1);
@@ -987,6 +987,7 @@ i_readfifo(void) {
 			if(!regexec(cmds[i].re, buf, 2, result, 0)
 				&& (cmds[i].test[0] == NULL || cmds[i].test[0]())
 				&& (cmds[i].test[1] == NULL || cmds[i].test[1]())) {
+				*(buf+result[1].rm_eo) = '\0';
 				cmds[i].func(&(const Arg){ .v = (buf+result[1].rm_so)});
 				break;
 			}
