@@ -33,6 +33,7 @@
 #define ISASCII(ch)   ((unsigned char)ch < 0x80)
 #define ISCTRL(ch)    (((unsigned char)ch < 0x20) || (ch == 0x7F))
 #define ISFILL(ch)    (isutf8 && !ISASCII(ch) && (unsigned char)ch<=0xBF)
+#define ISBLANK(ch)   (ch == ' ' || ch == '\t' || ch == '\0')
 #define ISWORDBRK(ch) (ISASCII(ch) && (ch < 0x30 || \
 				      (ch > 0x39 && ch < 0x41) || \
 				      (ch > 0x5A && ch < 0x5F) || \
@@ -1438,7 +1439,7 @@ m_bol(Filepos pos) {
 	Filepos vbol=pos;
 
 	vbol.o=0;
-	while(ISWORDBRK(vbol.l->c[vbol.o]) && ++vbol.o<vbol.l->len);
+	while(ISBLANK(vbol.l->c[vbol.o]) && ++vbol.o<vbol.l->len);
 	if(pos.o!=0 && pos.o<=vbol.o) vbol.o=0;
 	return vbol;
 }
