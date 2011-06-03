@@ -1124,8 +1124,8 @@ i_setup(void){
 	if(mkfifo(fifopath, (S_IRUSR|S_IWUSR)) !=0) i_die("FIFO already exists.\n");
 	if((fifofd = open(fifopath, O_RDONLY | O_NONBLOCK)) == -1) i_die("Can't open FIFO for reading.\n");;
 	setenv(envs[EnvFifo], fifopath, 1);
-	/*regcomp(find_res[0], "", 0);
-	regcomp(find_res[1], "", 0); */ /* Comment out until regexes are universal */
+	regcomp(find_res[0], "\0\0", 0); /* This should not match anything */
+	regcomp(find_res[1], "\0\0", 0);
 
 	initscr();
 	if(has_colors()) {
