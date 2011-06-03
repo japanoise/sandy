@@ -25,7 +25,6 @@
 
 #define LENGTH(x)     (sizeof x / sizeof x[0])
 #define LINSIZ        128
-#define ISWORDBRK(ch) (ch==' ' || ch=='\t' || ch=='\0')
 #define UTF8LEN(ch)   ((unsigned char)ch>=0xFC ? 6 : \
 			((unsigned char)ch>=0xF8 ? 5 : \
 			((unsigned char)ch>=0xF0 ? 4 : \
@@ -34,6 +33,11 @@
 #define ISASCII(ch)   ((unsigned char)ch < 0x80)
 #define ISCTRL(ch)    (((unsigned char)ch < 0x20) || (ch == 0x7F))
 #define ISFILL(ch)    (isutf8 && !ISASCII(ch) && (unsigned char)ch<=0xBF)
+#define ISWORDBRK(ch) (ISASCII(ch) && (ch < 0x30 || \
+				      (ch > 0x39 && ch < 0x41) || \
+				      (ch > 0x5A && ch < 0x5F) || \
+				      ch == 0x60 || \
+				      ch > 0x7A)) /* A bit flowed because we assume multibyte UTF8 chars al alnum */
 #define VLEN(ch,col)  (ch==0x09 ? tabstop-(col%tabstop) : (ISCTRL(ch) ? 2: (ISFILL(ch) ? 0: 1)))
 #define VLINES(l)     (1+(l?l->vlen/cols:0))
 #define FIXNEXT(pos)  while(isutf8 && ISFILL(pos.l->c[pos.o]) && ++pos.o < pos.l->len)
