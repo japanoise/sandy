@@ -108,6 +108,9 @@ enum { DefBG, CurBG, SelBG, /* Warning: BGs MUST have a matching FG */     LastB
 /* arg->i to use in f_extsel() */
 enum { ExtDefault, ExtWord, ExtLines, ExtAll, };
 
+/* To use in lastaction */
+enum { LastNone, LastDelete, LastInsert, LastPipe, };
+
 /* Environment variables index */
 enum { EnvFind, EnvPipe, EnvLine, EnvOffset, EnvFile, EnvSyntax, EnvFifo, EnvLast, };
 
@@ -165,6 +168,7 @@ static int       textattrs[LastFG][LastBG]; /* Text attributes for each color pa
 static int       savestep=0;                /* Index to determine the need to save in undo/redo action */
 static int       fifofd;                    /* Command fifo file descriptor */
 static long      statusflags=S_Running;     /* Status flags, very important, OR'd (see enums above) */
+static int       lastaction=LastNone;       /* The last action we took (see enums above) */
 static int       cols, lines;               /* Ncurses: to use instead of COLS and LINES, wise */
 static mmask_t   defmmask=ALL_MOUSE_EVENTS; /* Ncurses: mouse event mask */
 
@@ -256,13 +260,13 @@ static Filepos m_tosel(Filepos);
 /* F_* FUNCTIONS
    Can be linked to an action or keybinding. Always return void and take const Arg* */
 
-void /* Make cursor line the one in the middle of the screen if possible */
+void /* Make cursor line the one in the middle of the screen if possible, refresh screen */
 f_center(const Arg *arg) {
 	int i=LINES2/2;
 	
 	scrline=fcur.l;
 	while((i -= VLINES(scrline)) > 0 && scrline->prev) scrline=scrline->prev;
-	statusflags|=S_DirtyScr;
+	i_resize();
 }
 
 void /* Delete text as per arg->m. Your responsibility: call only if t_rw() */
@@ -484,29 +488,29 @@ f_toggle(const Arg *arg) {
 void /* Undo last action if arg->i >=0, redo otherwise. Your responsibility: call only if t_undo() / t_redo() */
 f_undo(const Arg *arg) {
 	Filepos start, end;
-	const bool r=(arg->i < 0);
+	const bool isredo=(arg->i < 0);
 	Undo *u;
 	int   n;
 
 	statusflags&=~S_Selecting;
-	u=(r?redos:undos);
+	u=(isredo?redos:undos);
 	fsel.o=u->starto, fsel.l=i_lineat(u->startl);
 	fcur=fsel;
 	while(u) {
 		start.o=u->starto, start.l=i_lineat(u->startl);
 		end.o=u->endo,     end.l=i_lineat(u->endl);
-		if(r ^ (u->flags & UndoIns)) {
+		if(isredo ^ (u->flags & UndoIns)) {
                         i_sortpos(&start, &end);
                         i_deltext(start, end);
                         fcur=fsel=start;
                 } else
                         fcur=i_addtext(u->str, fcur);
-                if(r)
+                if(isredo)
                         redos=u->prev, u->prev=undos, undos=u;
                 else
                         undos=u->prev, u->prev=redos, redos=u;
-                if (!(u->flags & (r?RedoMore:UndoMore))) break;
-		u=(r?redos:undos);
+                if (!(u->flags & (isredo?RedoMore:UndoMore))) break;
+		u=(isredo?redos:undos);
 	}
 
 	for(n=0, u=undos; u; u=u->prev, n++);
@@ -530,7 +534,7 @@ void /* Add undo information to the undo ring */
 i_addundo(bool ins, Filepos start, Filepos end, char *s) {
 	Undo *u;
 
-	if(redos) i_killundos(&redos);
+	if(redos) i_killundos(&redos); /* Once you make a change, the old redos go away */
 	if ((u=(Undo*)calloc(1, sizeof(Undo))) == NULL)
 		i_die("Can't malloc.\n");
 	u->flags  = (ins?UndoIns:0);
@@ -1046,7 +1050,6 @@ i_resize(void) {
 	result = ioctl(fd, TIOCGWINSZ, &ws);
 	close(fd);
 	if(result<0) return;
-	if(cols==ws.ws_col && lines==ws.ws_row) return;
 	cols=ws.ws_col;
 	lines=ws.ws_row;
 	endwin();
@@ -1166,7 +1169,6 @@ i_sigwinch(int unused) {
 
 void /* Process SIGCONT to return after STOP */
 i_sigcont(int unused) {
-	cols = 0;
 	i_resize();
 }
 
