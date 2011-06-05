@@ -843,6 +843,7 @@ i_find(bool fw) {
 
 		if ((status=regexec(find_res[sel_re], s, 1, result, (fw?(fcur.o==0 ? 0 : REG_NOTBOL):
 							fsel.o==fsel.l->len?0:REG_NOTEOL))) == 0) {
+			f_mark(NULL);
 			if(wp || !fw)
 				fcur=start;
 			fsel=fcur;
@@ -861,7 +862,6 @@ i_find(bool fw) {
 			}
 			i_advpos(&fsel, _so);
 			i_advpos(&fcur, _eo);
-			f_mark(NULL);
 			wp++;
 		}
 	}
@@ -1629,6 +1629,7 @@ m_tomark(Filepos pos) {
 		pos.o=fmrk.o;
 		if(pos.o>pos.l->len) pos.o=pos.l->len;
 		FIXNEXT(pos);
+		f_mark(NULL);
 		break;
 	}
 	return pos;
