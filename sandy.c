@@ -1565,9 +1565,14 @@ m_prevword(Filepos pos) {
 
 Filepos /* Advance one line, or to eol if at last line */
 m_nextline(Filepos pos) {
+	int ivchar, ichar;
+
+	for(ivchar=ichar=0; ichar < pos.o;ichar++)
+		ivchar+=VLEN(pos.l->c[ichar], (ivchar%(cols-1)));
+
 	if(pos.l->next){
-		pos.l=pos.l->next;
-		if(pos.o>pos.l->len) pos.o=pos.l->len;
+		for(pos.l=pos.l->next, pos.o=ichar=0; ichar<ivchar && pos.o < pos.l->len; pos.o++)
+			ichar+=VLEN(pos.l->c[pos.o], ichar);
 		FIXNEXT(pos);
 	} else pos.o=pos.l->len;
 	return pos;
@@ -1575,9 +1580,14 @@ m_nextline(Filepos pos) {
 
 Filepos /* Backup one line, or to bol if at first line */
 m_prevline(Filepos pos) {
+	int ivchar, ichar;
+
+	for(ivchar=ichar=0; ichar < pos.o;ichar++)
+		ivchar+=VLEN(pos.l->c[ichar], (ivchar%(cols-1)));
+
 	if(pos.l->prev){
-		pos.l=pos.l->prev;
-		if(pos.o>pos.l->len) pos.o=pos.l->len;
+		for(pos.l=pos.l->prev, pos.o=ichar=0; ichar<ivchar && pos.o < pos.l->len; pos.o++)
+			ichar+=VLEN(pos.l->c[pos.o], ichar);
 		FIXNEXT(pos);
 	} else pos.o=0;
 	return pos;
