@@ -134,7 +134,7 @@ static const Key stdkeys[] = {
 { CONTROL('\\'),{ 0,     0,    0,   0 },  f_spawn,     PIPE },
 { CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault } },
 { CONTROL('^'), { t_redo,t_rw, 0,   0 },  f_undo,      { .i = -1 } },
-/*{ CONTROL('^'), { t_rw,  0,    0,   0 },  f_undo,      { .i = 0 } }, */ /* TODO: repeat, implement */
+{ CONTROL('^'), { t_rw,  0,    0,   0 },  f_repeat,    { 0 } },
 { CONTROL('_'), { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1 } },
 { CONTROL('?'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
 { CONTROL('?'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },

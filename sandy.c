@@ -109,7 +109,7 @@ enum { DefBG, CurBG, SelBG, /* Warning: BGs MUST have a matching FG */     LastB
 enum { ExtDefault, ExtWord, ExtLines, ExtAll, };
 
 /* To use in lastaction */
-enum { LastNone, LastDelete, LastInsert, LastPipe, };
+enum { LastNone, LastDelete, LastInsert, LastPipe, LastPipeRO, };
 
 /* Environment variables index */
 enum { EnvFind, EnvPipe, EnvLine, EnvOffset, EnvFile, EnvSyntax, EnvFifo, EnvLast, };
@@ -187,6 +187,7 @@ static void f_offset(const Arg*);
 static void f_pipe(const Arg*);
 static void f_pipelines(const Arg*);
 static void f_pipero(const Arg*);
+static void f_repeat(const Arg*);
 static void f_save(const Arg*);
 static void f_select(const Arg*);
 static void f_spawn(const Arg*);
@@ -198,6 +199,7 @@ static void f_warn(const Arg *arg);
 
 /* i_* funcions are called from inside the main code only */
 static Filepos        i_addtext(char*, Filepos);
+static void           i_addtoundo(Filepos, const char*);
 static void           i_addundo(bool, Filepos, Filepos, char*);
 static void           i_advpos(Filepos *pos, int o);
 static void           i_calcvlen(Line *l);
@@ -284,6 +286,7 @@ f_delete(const Arg *arg) {
 	fcur=fsel=pos0;
 	statusflags|=S_Modified;
 	statusflags&=~S_Selecting;
+	lastaction=LastDelete;
 }
 
 void /* Extend the selection as per arg->i (see enums above) */
@@ -333,11 +336,15 @@ f_insert(const Arg *arg) {
 		undos->flags^=RedoMore;
 	}
 	fsel=i_addtext((char*)arg->v, fcur);
-	i_addundo(TRUE, fcur, fsel, i_strdup(arg->v));
+	if(!killsel && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l)) {
+		i_addtoundo(fsel, arg->v);
+	} else
+		i_addundo(TRUE, fcur, fsel, i_strdup(arg->v));
 	if(killsel) undos->flags^=UndoMore;
 	fcur=fsel;
 	statusflags|=S_Modified;
 	statusflags&=~S_Selecting;
+	lastaction=LastInsert;
 }
 
 void /* Go to atoi(arg->v) line */
@@ -374,6 +381,7 @@ void /* Pipe selection through arg->v external command. Your responsibility: cal
 f_pipe(const Arg *arg) {
 	i_pipetext(arg->v);
 	statusflags|=S_Modified;
+	lastaction=LastPipe;
 }
 
 void /* Pipe full lines including the selection through arg->v external command. Your responsibility: call only if t_rw() */
@@ -381,6 +389,7 @@ f_pipelines(const Arg *arg) {
 	f_extsel(&(const Arg){ .i = ExtLines });
 	i_pipetext(arg->v);
 	statusflags|=S_Modified;
+	lastaction=LastPipe;
 }
 
 void /* Pipe selection through arg->v external command but do not update text on screen */
@@ -390,6 +399,32 @@ f_pipero(const Arg *arg) {
 	statusflags|=S_Readonly;
 	i_pipetext(arg->v);
 	statusflags=oldsf&(~S_Selecting);
+	lastaction=LastPipeRO;
+}
+
+void /* Repeat the last action */
+f_repeat(const Arg *arg) {
+	Filepos pos;
+	i_sortpos(&fsel, &fcur);
+	switch(lastaction) {
+	case LastDelete:
+		if(t_sel()) f_delete(&(const Arg){ .m = m_tosel });
+	break;
+	case LastInsert:
+		if(undos && undos->flags & UndoIns) {
+			pos=fsel;
+			f_insert(&(const Arg){ .v = undos->str });
+			fsel=pos;
+		}
+	break;
+	case LastPipe:
+		f_pipe(&(const Arg) { .v = getenv(envs[EnvPipe]) });
+	break;
+	case LastPipeRO:
+		f_pipero(&(const Arg) { .v = getenv(envs[EnvPipe]) });
+	break;
+	}
+	statusflags&=~S_Selecting;
 }
 
 void /* Save file with arg->v filename, same if NULL. Your responsibility: call only if t_mod() */
@@ -530,7 +565,19 @@ f_warn(const Arg *arg) {
 /* I_* FUNCTIONS
    Called internally from the program code */
 
-void /* Add undo information to the undo ring */
+void /* Add information to the last undo in the ring */
+i_addtoundo(Filepos newend, const char *s) {
+	int oldsiz, newsiz;
+
+	oldsiz=strlen(undos->str), newsiz=strlen(s);
+	undos->endl=i_lineno(newend.l);
+	undos->endo=newend.o;
+	if((undos->str=(char*)realloc(undos->str, 1+oldsiz+newsiz)) == NULL)
+		i_die("Can't malloc.\n");
+	strncat(undos->str, s, newsiz);
+}
+
+void /* Add new undo information to the undo ring */
 i_addundo(bool ins, Filepos start, Filepos end, char *s) {
 	Undo *u;
 

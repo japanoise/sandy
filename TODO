@@ -8,9 +8,8 @@ In no particular order, at sandy.c:
 - BUG: Deal with the bigger-than-window line
 - Improve regex search (backwards!!)
 - Improve syntax highlight, multiline?
-- Groups Undos
-- Repeat operation (or last pipe at least!)
-- Clarify on undo/redo/repeat
+- Group delete undos?
+- Limit insertion undo grouping?
 
 At config.def.h:
 - Bindings!
