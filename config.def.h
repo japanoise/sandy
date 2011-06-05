@@ -29,9 +29,9 @@ static const char   nlstr[1]   = { 0 };
 
 #define FIND   PROMPT("Find:",        "${SANDY_FIND}",   "/")
 #define FINDBW PROMPT("Find (back):", "${SANDY_FIND}",   "?")
-#define PIPE   PROMPT("Pipe:",        "${SANDY_PIPE}",   "|")
+#define PIPE   PROMPT("Pipe:",        "${SANDY_PIPE}",   "pipe ")
 #define SAVEAS PROMPT("Save as:",     "${SANDY_FILE}",   "w")
-#define CMD_P  PROMPT("Command:",     "/\n?\n|\nw\nsyntax\noffset", "")
+#define CMD_P  PROMPT("Command:",     "/\n?\nw\npipe\nsyntax\noffset", "")
 
 /* Args to f_pipe / f_pipero */
 /* TODO: make sandy-sel to wrap xsel or standalone */
@@ -147,8 +147,8 @@ static Command cmds[] = { /* Use only f_ funcs that take Arg.v */
 {NULL, "^([0-9]+)$",      { 0,     0 }, f_line   },
 {NULL, "^/(.*)$",         { 0,     0 }, f_findfw },
 {NULL, "^\\?(.*)$",       { 0,     0 }, f_findbw },
-{NULL, "^\\|[ \t]*(.*)$", { t_rw,  0 }, f_pipe   },
-{NULL, "^\\|[ \t]*(.*)$", { 0,     0 }, f_pipero },
+{NULL, "^pipe (.*)$",     { t_rw,  0 }, f_pipe   },
+{NULL, "^pipe (.*)$",     { 0,     0 }, f_pipero },
 {NULL, "^w[ \t]*(.*)$",   { 0,     0 }, f_save   },
 {NULL, "^syntax (.*)$",   { 0,     0 }, f_syntax },
 {NULL, "^offset (.*)$",   { 0,     0 }, f_offset },
