@@ -39,7 +39,7 @@
 				      (ch > 0x39 && ch < 0x41) || \
 				      (ch > 0x5A && ch < 0x5F) || \
 				      ch == 0x60 || \
-				      ch > 0x7A)) /* A bit flawed because we assume multibyte UTF8 chars al alnum */
+				      ch > 0x7A)) /* A bit flawed because we assume multibyte UTF8 chars are alnum */
 #define VLEN(ch,col)  (ch==0x09 ? tabstop-(col%tabstop) : (ISCTRL(ch) ? 2: (ISFILL(ch) ? 0: 1)))
 #define VLINES(l)     (1+(l?l->vlen/cols:0))
 #define FIXNEXT(pos)  while(isutf8 && ISFILL(pos.l->c[pos.o]) && ++pos.o < pos.l->len)
@@ -126,6 +126,7 @@ enum { /* To use in statusflags */
 	S_DirtyDown  = 1<<7,
 	S_NeedResize = 1<<8,
 	S_Warned     = 1<<9,
+	S_GroupUndo  = 1<<10,
 };
 
 enum { /* To use in Undo.flags */
@@ -337,13 +338,13 @@ f_insert(const Arg *arg) {
 		undos->flags^=RedoMore;
 	}
 	fsel=i_addtext((char*)arg->v, fcur);
-	if(!killsel && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l)) {
+	if((statusflags & S_GroupUndo) && !killsel && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l)) {
 		i_addtoundo(fsel, arg->v);
 	} else
 		i_addundo(TRUE, fcur, fsel, i_strdup(arg->v));
 	if(killsel) undos->flags^=UndoMore;
 	fcur=fsel;
-	statusflags|=S_Modified;
+	statusflags|=(S_Modified|S_GroupUndo);
 	statusflags&=~S_Selecting;
 	lastaction=LastInsert;
 }
@@ -782,6 +783,7 @@ i_edit(void) {
 					&& ( curskeys[i].test[1] == NULL || curskeys[i].test[1]() )
 					&& ( curskeys[i].test[2] == NULL || curskeys[i].test[2]() )
 					&& ( curskeys[i].test[3] == NULL || curskeys[i].test[3]() ) ) {
+					if(curskeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					curskeys[i].func(&(curskeys[i].arg));
 					break;
 				}
@@ -811,6 +813,7 @@ i_edit(void) {
 					&& ( stdkeys[i].test[1] == NULL || stdkeys[i].test[1]() )
 					&& ( stdkeys[i].test[2] == NULL || stdkeys[i].test[2]() )
 					&& ( stdkeys[i].test[3] == NULL || stdkeys[i].test[3]() ) ) {
+					if(stdkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					stdkeys[i].func(&(stdkeys[i].arg));
 					break;
 				}
