@@ -1,18 +1,19 @@
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <sys/select.h>
-#include <sys/ioctl.h>
+/* See LICENSE file for copyright and license details. */
 #include <errno.h>
-#include <signal.h>
-#include <regex.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <locale.h>
+#include <ncurses.h>
+#include <regex.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <locale.h>
 #include <string.h>
-#include <ncurses.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/select.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 /* Defines */
 #ifndef PIPESIZ /* This is POSIX magic */
@@ -23,13 +24,13 @@
 #define PATHSIZ 1024
 #endif /*PATHSIZ*/
 
-#define LENGTH(x)     (sizeof x / sizeof x[0])
+#define LENGTH(x)     ((int)(sizeof (x) / sizeof *(x)))
 #define LINSIZ        128
 #define UTF8LEN(ch)   ((unsigned char)ch>=0xFC ? 6 : \
-			((unsigned char)ch>=0xF8 ? 5 : \
-			((unsigned char)ch>=0xF0 ? 4 : \
-			((unsigned char)ch>=0xE0 ? 3 : \
-			((unsigned char)ch>=0xC0 ? 2 : 1)))))
+                       ((unsigned char)ch>=0xF8 ? 5 : \
+                       ((unsigned char)ch>=0xF0 ? 4 : \
+                       ((unsigned char)ch>=0xE0 ? 3 : \
+                       ((unsigned char)ch>=0xC0 ? 2 : 1)))))
 #define ISASCII(ch)   ((unsigned char)ch < 0x80)
 #define ISCTRL(ch)    (((unsigned char)ch < 0x20) || (ch == 0x7F))
 #define ISFILL(ch)    (isutf8 && !ISASCII(ch) && (unsigned char)ch<=0xBF)
@@ -51,15 +52,15 @@ struct Line {        /** The internal representation of a line of text */
 	char *c;     /* Line content */
 	size_t len;  /* Line byte length */
 	size_t vlen; /* On-screen line-length */
-	int mul;     /* How many times LINSIZ is c malloc'd to */
+	size_t mul;  /* How many times LINSIZ is c malloc'd to */
 	bool dirty;  /* Should I repaint on screen? */
 	Line *next;  /* Next line, NULL if I'm last */
 	Line *prev;  /* Previous line, NULL if I'm first */
 };
 
-typedef struct { /** A position in the file */
-	Line *l; /* Line */
-	int o;   /* Offset inside the line */
+typedef struct {  /** A position in the file */
+	Line *l;  /* Line */
+	size_t o; /* Offset inside the line */
 } Filepos;
 
 typedef union { /** An argument to a f_* function, generic */
@@ -95,7 +96,7 @@ typedef struct Undo Undo;
 struct Undo {                       /** Undo information */
 	char flags;                 /* Flags: is insert/delete?, should concatenate with next undo/redo? */
 	unsigned long startl, endl; /* Line number for undo/redo start and end */
-	int starto, endo;           /* Character offset for undo/redo start and end */
+	size_t starto, endo;        /* Character offset for undo/redo start and end */
 	char *str;                  /* Content (added or deleted text) */
 	Undo *prev;                 /* Previous undo/redo in the ring */
 };
@@ -483,7 +484,7 @@ void
 f_suspend(const Arg *arg) {
 	wclear(textwin);
 	signal (SIGCONT, i_sigcont);
-	kill(getpid(), SIGSTOP);
+	raise(SIGSTOP);
 }
 
 void /* Set syntax with name arg->v */
@@ -598,8 +599,8 @@ Filepos /* Add text at pos, return the position after the inserted text */
 i_addtext(char *buf, Filepos pos){
 	size_t i=0, il=0;
 	char c;
-	Line *l=pos.l, *lnew=NULL;
-	int   o=pos.o, vlines;
+	Line  *l=pos.l, *lnew=NULL;
+	size_t o=pos.o, vlines;
 	Filepos f;
 
 	vlines=VLINES(l);
@@ -656,7 +657,7 @@ i_advpos(Filepos *pos, int o) {
 
 void /* Update the vlen value of a Line */
 i_calcvlen(Line *l) {
-	int i;
+	size_t i;
 
 	l->vlen=0;
 	for(i=0; i<l->len; i++)
@@ -704,7 +705,7 @@ i_dirtyrange(Line *l0, Line *l1) {
 void /* Delete text between pos0 and pos1, which MUST be in order, fcur and fsel integrity is NOT assured after deletion */
 i_deltext(Filepos pos0, Filepos pos1) {
 	Line *ldel=NULL;
-	int vlines=1;
+	size_t vlines=1;
 
 	if(pos0.l==pos1.l) {
 		vlines=VLINES(pos0.l);
@@ -1273,7 +1274,8 @@ i_termwininit(void) {
 
 void /* Repaint screen. This is where everything happens. Apologies for the unnecessary complexity and length */
 i_update(void) {
-	static int iline, irow, ixrow, ichar, ivchar, i, ifg, ibg, vlines;
+	static int iline, irow, ixrow, ivchar, i, ifg, ibg, vlines;
+	static size_t ichar;
 	static int cursor_r, cursor_c;
 	static int lines3; /* How many lines fit on screen */
 	static long int nscr, ncur, nlst; /* Line number for scrline, fcur.l and lstline */
@@ -1351,13 +1353,13 @@ i_update(void) {
 					if(selection) ifg=SelFG, ibg=SelBG;
 					if(syntx && l) for(i=0; i<SYN_COLORS; i++) {
 						if(match[i][0].rm_so == -1) continue;
-						if(ichar >= match[i][0].rm_eo) {
+						if(ichar >= (size_t)match[i][0].rm_eo) {
 							if(regexec(syntx->re[i], &l->c[ichar], 1, match[i], REG_NOTBOL) || match[i][0].rm_so == match[i][0].rm_eo)
 								continue;
 							match[i][0].rm_so+=ichar;
 							match[i][0].rm_eo+=ichar;
 						}
-						if(ichar >= match[i][0].rm_so && ichar < match[i][0].rm_eo)
+						if(ichar >= (size_t)match[i][0].rm_so && ichar < (size_t)match[i][0].rm_eo)
 							ifg=Syn0FG+i;
 					}
 					wattrset(textwin, textattrs[ifg][ibg]);
