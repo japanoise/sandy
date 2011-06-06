@@ -1082,7 +1082,12 @@ i_readfile(char *fname) {
 		fcur=i_addtext(buf, fcur);
 	}
 	if(fd > 0) close(fd);
-	else reset_prog_mode();
+	else {
+		if((fd = open("/dev/tty", O_RDONLY)) == -1) i_die("Can't reopen stdin.\n");
+		dup2(fd, 0);
+		close(fd);
+		reset_prog_mode();
+	}
 	free(buf);
 	fcur.l=fstline;
 	fcur.o=0;
