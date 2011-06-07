@@ -26,11 +26,11 @@
 
 #define LENGTH(x)     ((int)(sizeof (x) / sizeof *(x)))
 #define LINSIZ        128
-#define UTF8LEN(ch)   ((unsigned char)ch>=0xFC ? 6 : \
-                       ((unsigned char)ch>=0xF8 ? 5 : \
-                       ((unsigned char)ch>=0xF0 ? 4 : \
-                       ((unsigned char)ch>=0xE0 ? 3 : \
-                       ((unsigned char)ch>=0xC0 ? 2 : 1)))))
+#define UTF8LEN(ch)     ((unsigned char)ch>=0xFC ? 6 : \
+			((unsigned char)ch>=0xF8 ? 5 : \
+			((unsigned char)ch>=0xF0 ? 4 : \
+			((unsigned char)ch>=0xE0 ? 3 : \
+			((unsigned char)ch>=0xC0 ? 2 : 1)))))
 #define ISASCII(ch)   ((unsigned char)ch < 0x80)
 #define ISCTRL(ch)    (((unsigned char)ch < 0x20) || (ch == 0x7F))
 #define ISFILL(ch)    (isutf8 && !ISASCII(ch) && (unsigned char)ch<=0xBF)
@@ -262,7 +262,7 @@ static Filepos m_tosel(Filepos);
 #include "config.h"
 
 /* F_* FUNCTIONS
-   Can be linked to an action or keybinding. Always return void and take const Arg* */
+	Can be linked to an action or keybinding. Always return void and take const Arg* */
 
 void /* Make cursor line the one in the middle of the screen if possible, refresh screen */
 f_center(const Arg *arg) {
@@ -305,7 +305,6 @@ f_extsel(const Arg *arg) {
 	case ExtAll:
 		fsel.l=fstline, fcur.l=lstline;
 		f_extsel(&(const Arg){.i = ExtLines});
-		statusflags|=S_DirtyScr;
 	break;
 	case ExtDefault:
 	default:
@@ -438,7 +437,7 @@ f_save(const Arg *arg) {
 		free(filename);
 		filename=i_strdup(arg->v);
 		setenv(envs[EnvFile], filename, 1);
-	} else if(filename==NULL) { 
+	} else if(filename==NULL) {
 		unsetenv(envs[EnvFile]);
 #ifdef HOOK_SAVE_NO_FILE
 		HOOK_SAVE_NO_FILE;
@@ -513,8 +512,8 @@ f_syntax(const Arg *arg) {
 void /* Toggle the arg->i statusflag. Careful with this one! */
 f_toggle(const Arg *arg) {
 	statusflags^=(char)arg->i;
- 
-        /* Specific operations for some toggles */
+
+	/* Specific operations for some toggles */
 	switch(arg->i) {
 	case S_CaseIns: /* Re-compile regex with/without REG_ICASE */
 		i_setfindterm(getenv(envs[EnvFind]));
@@ -537,16 +536,16 @@ f_undo(const Arg *arg) {
 		start.o=u->starto, start.l=i_lineat(u->startl);
 		end.o=u->endo,     end.l=i_lineat(u->endl);
 		if(isredo ^ (u->flags & UndoIns)) {
-                        i_sortpos(&start, &end);
-                        i_deltext(start, end);
-                        fcur=fsel=start;
-                } else
-                        fcur=i_addtext(u->str, fcur);
-                if(isredo)
-                        redos=u->prev, u->prev=undos, undos=u;
-                else
-                        undos=u->prev, u->prev=redos, redos=u;
-                if (!(u->flags & (isredo?RedoMore:UndoMore))) break;
+			i_sortpos(&start, &end);
+			i_deltext(start, end);
+			fcur=fsel=start;
+		} else
+			fcur=i_addtext(u->str, fcur);
+		if(isredo)
+			redos=u->prev, u->prev=undos, undos=u;
+		else
+			undos=u->prev, u->prev=redos, redos=u;
+		if (!(u->flags & (isredo?RedoMore:UndoMore))) break;
 		u=(isredo?redos:undos);
 	}
 
@@ -565,7 +564,7 @@ f_warn(const Arg *arg) {
 
 
 /* I_* FUNCTIONS
-   Called internally from the program code */
+	Called internally from the program code */
 
 void /* Add information to the last undo in the ring */
 i_addtoundo(Filepos newend, const char *s) {
@@ -1050,7 +1049,7 @@ i_readfifo(void) {
 	}
 	free(tofree);
 
-	/* Kludge: we close and reopen to circumvent a bug? 
+	/* Kludge: we close and reopen to circumvent a bug?
 	           if we don't do this, fifofd seems to be always ready to select()
 		   also, I was unable to mark fifofd as blocking after opening */
 	close(fifofd);
@@ -1485,7 +1484,7 @@ i_writefile(void) {
 }
 
 /* M_* FUNCTIONS
-   Represent a cursor motion, always take a Filepos and return an update Filepos */
+	Represent a cursor motion, always take a Filepos and return an update Filepos */
 
 Filepos /* Go to beginning of file */
 m_bof(Filepos pos) {
@@ -1646,7 +1645,7 @@ m_tosel(Filepos pos) {
 }
 
 /* T_* FUNCTIONS
-   Used to test for conditions, take no arguments and return bool. */
+	Used to test for conditions, take no arguments and return bool. */
 
 bool /* TRUE at the beginning of line */
 t_bol(void) {
