@@ -684,7 +684,7 @@ i_cleanup(int sig) {
 	regfree(find_res[0]);
 	regfree(find_res[1]);
 	endwin();
-	exit(sig>0?1:0);
+	exit(sig>0?128+sig:t_mod()?1:0);
 }
 
 void /* Quit less gracefully */
