@@ -226,7 +226,6 @@ static void           i_setup(void);
 static void           i_sigwinch(int);
 static void           i_sigcont(int);
 static void           i_sortpos(Filepos*, Filepos*);
-static char          *i_strdup(const char*);
 static void           i_termwininit(void);
 static void           i_update(void);
 static void           i_usage(void);
@@ -340,7 +339,7 @@ f_insert(const Arg *arg) {
 	if((statusflags & S_GroupUndo) && !killsel && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l)) {
 		i_addtoundo(fsel, arg->v);
 	} else
-		i_addundo(TRUE, fcur, fsel, i_strdup(arg->v));
+		i_addundo(TRUE, fcur, fsel, strdup((char*)arg->v));
 	if(killsel) undos->flags^=UndoMore;
 	fcur=fsel;
 	statusflags|=(S_Modified|S_GroupUndo);
@@ -435,7 +434,7 @@ f_save(const Arg *arg) {
 	statusflags&=~S_Selecting;
 	if(arg && arg->v && *((char*)arg->v)) {
 		free(filename);
-		filename=i_strdup(arg->v);
+		filename=strdup((char*)arg->v);
 		setenv(envs[EnvFile], filename, 1);
 	} else if(filename==NULL) {
 		unsetenv(envs[EnvFile]);
@@ -974,7 +973,7 @@ i_pipetext(const char *cmd) {
 		close(pin[0]);
 		close(pout[1]);
 		if (t_rw()) {
-			i_addundo(FALSE, fsel, fcur, i_strdup(s));
+			i_addundo(FALSE, fsel, fcur, strdup(s));
 			undos->flags^=RedoMore;
 			i_deltext(fsel, fcur);
 			fcur=fsel;
@@ -993,7 +992,7 @@ i_pipetext(const char *cmd) {
 				else break; /* ...not seen it yet */
 				if (nr && t_rw()) {
 					auxp=i_addtext(buf, fcur);
-					i_addundo(TRUE, fcur, auxp, i_strdup(buf));
+					i_addundo(TRUE, fcur, auxp, strdup(buf));
 					undos->flags^=RedoMore|UndoMore;
 					fcur=auxp;
 				}
@@ -1066,7 +1065,7 @@ i_readfile(char *fname) {
 		fd=0;
 		reset_shell_mode();
 	} else {
-		filename=i_strdup(fname);
+		filename=strdup(fname);
 		setenv(envs[EnvFile], filename, 1);
 		f_syntax(NULL); /* If we are here, try to guess a syntax */
 		if((fd=open(filename, O_RDONLY)) == -1){
@@ -1239,17 +1238,6 @@ i_sortpos(Filepos *pos0, Filepos *pos1) {
 			break;
 		}
 	}
-}
-
-char* /* Duplicate string, you MUST free the returned string after use */
-i_strdup(const char *src) {
-	char *dst;
-	int i;
-
-	i=1+strlen(src);
-	if((dst=malloc(i)) == NULL)
-		i_die("Can't malloc.\n");
-	return memcpy(dst, src, i);
 }
 
 void /* Initialize terminal */
