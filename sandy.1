@@ -104,8 +104,7 @@ Extend selection to word, line, or full file from current.
 Cancel selection, or start selecting text manually.
 .TP
 .B Ctrl\-o
-Move to the opposite size of the selection, usually to change it or if there is
-no selection, move to mark.
+Move to the opposite size of the selection, usually to extend it.
 .SS Deleting
 If any text is selected, any of these bindings deletes it and, unless Backspace
 or Delete, moves it to the clipboard.  Otherwise they behave as per this text.
@@ -126,19 +125,15 @@ Delete to end of line or join with next line.
 .B Ctrl\-w
 Delete to beginning of word or previous word.
 .TP
-.B Ctrl\-c
+.B Ctrl\-q
 Delete to end of word or next word.
-.SS Mark
-The mark is a single fixed position in the file that can be used as bookmark.
 .TP
 .BR Ctrl\-Space " or " Ctrl\-`
 Set mark in current position.
-.TP
-.BR Ctrl\-o
-Go to mark unless there is a selection.  Prepend with Ctrl\-g to select to mark.
+Go to mark.  Prepend with Ctrl\-g to select to mark.
 .SS File operations
 .TP
-.BR Ctrl\-q
+.BR Ctrl\-c
 Quit if the file has not been modified. Repeat to quit unconditionally.
 .TP
 .B Ctrl\-x

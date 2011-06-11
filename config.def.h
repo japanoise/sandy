@@ -77,13 +77,13 @@ static const Key curskeys[] = { /* Don't use CONTROL or META here */
 
 static const Key stdkeys[] = {
 /* keyv,        test,                     func,        arg */
-{ CONTROL('@'), { 0,     0,    0,   0 },  f_mark,      { 0 } },
+{ CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { CONTROL('A'), { t_bol, 0,    0,   0 },  f_move,      { .m = m_prevscr } },
 { CONTROL('A'), { 0,     0,    0,   0 },  f_move,      { .m = m_bol } },
 { CONTROL('B'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar } },
-{ CONTROL('C'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
-{ CONTROL('C'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextword } },
-{ CONTROL('C'), { 0,     0,    0,   0 },  f_select,    { .m = m_nextword } },
+{ CONTROL('C'), { t_warn,t_mod,0,   0 },  f_toggle,    { .i = S_Running } },
+{ CONTROL('C'), { t_mod, 0,    0,   0 },  f_toggle,    { .i = S_Warned } },
+{ CONTROL('C'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
 { CONTROL('D'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
 { CONTROL('D'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextchar } },
 { CONTROL('D'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar } },
@@ -108,11 +108,10 @@ static const Key stdkeys[] = {
 { CONTROL('M'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 { CONTROL('N'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 { CONTROL('O'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_tosel } }, /* Swap fsel and fcur */
-{ CONTROL('O'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { CONTROL('P'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevline } },
-{ CONTROL('Q'), { t_warn,t_mod,0,   0 },  f_toggle,    { .i = S_Running } },
-{ CONTROL('Q'), { t_mod, 0,    0,   0 },  f_toggle,    { .i = S_Warned } },
-{ CONTROL('Q'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
+{ CONTROL('Q'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
+{ CONTROL('Q'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextword } },
+{ CONTROL('Q'), { 0,     0,    0,   0 },  f_select,    { .m = m_nextword } },
 { CONTROL('R'), { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
 { CONTROL('R'), { 0,     0,    0,   0 },  f_spawn,     FINDBW },
 { CONTROL('S'), { t_sel, 0,    0,   0 },  f_findfw,    { 0 } },
