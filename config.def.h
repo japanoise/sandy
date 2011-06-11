@@ -24,7 +24,7 @@ static const char   nlstr[1]   = { 0 };
 #define PROMPT(prompt, default, cmd) { .v = (const char *[]){ "/bin/sh", "-c", \
 	"dmenu -v >/dev/null 2>&1 || DISPLAY=\"\";"\
 	"if [ -n \"$DISPLAY\" ]; then arg=\"`echo \\\"" default "\\\" | dmenu -p '" prompt "'`\";" \
-	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \"; read arg; fi &&" \
+	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \" >&2; read arg; fi &&" \
 	"echo " cmd "\"$arg\" > ${SANDY_FIFO}", NULL } }
 
 #define FIND   PROMPT("Find:",        "${SANDY_FIND}",   "/")
@@ -111,7 +111,7 @@ static const Key stdkeys[] = {
 { CONTROL('O'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { CONTROL('P'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevline } },
 { CONTROL('Q'), { t_warn,t_mod,0,   0 },  f_toggle,    { .i = S_Running } },
-{ CONTROL('Q'), { t_mod, 0,    0,   0 },  f_warn,      { .v = "WARNING! File modified!!!" } },
+{ CONTROL('Q'), { t_mod, 0,    0,   0 },  f_toggle,    { .i = S_Warned } },
 { CONTROL('Q'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
 { CONTROL('R'), { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
 { CONTROL('R'), { 0,     0,    0,   0 },  f_spawn,     FINDBW },

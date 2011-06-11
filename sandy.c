@@ -64,7 +64,7 @@ typedef struct {  /** A position in the file */
 } Filepos;
 
 typedef union { /** An argument to a f_* function, generic */
-	int i;
+	long i;
 	const void *v;
 	Filepos (*m)(Filepos);
 } Arg;
@@ -197,7 +197,6 @@ static void f_suspend(const Arg*);
 static void f_syntax(const Arg *arg);
 static void f_toggle(const Arg *arg);
 static void f_undo(const Arg*);
-static void f_warn(const Arg *arg);
 
 /* i_* funcions are called from inside the main code only */
 static Filepos        i_addtext(char*, Filepos);
@@ -229,7 +228,7 @@ static void           i_sortpos(Filepos*, Filepos*);
 static void           i_termwininit(void);
 static void           i_update(void);
 static void           i_usage(void);
-static bool           i_writefile(void);
+static bool           i_writefile(char*);
 
 /* t_* functions to know whether to process an action or keybinding */
 static bool t_bol(void);
@@ -444,7 +443,7 @@ f_save(const Arg *arg) {
 		return;
 	}
 
-	if(i_writefile()) {
+	if(i_writefile(filename)) {
 		statusflags&=~S_Modified;
 		for(savestep=0,u=undos; u; u=u->prev, savestep++);
 	}
@@ -510,12 +509,15 @@ f_syntax(const Arg *arg) {
 
 void /* Toggle the arg->i statusflag. Careful with this one! */
 f_toggle(const Arg *arg) {
-	statusflags^=(char)arg->i;
+	statusflags^=(long)arg->i;
 
 	/* Specific operations for some toggles */
 	switch(arg->i) {
 	case S_CaseIns: /* Re-compile regex with/without REG_ICASE */
 		i_setfindterm(getenv(envs[EnvFind]));
+	break;
+	case S_Warned: /* Set warning title */
+		tmptitle="Warning! File Modified!!!";
 	break;
 	}
 }
@@ -553,12 +555,6 @@ f_undo(const Arg *arg) {
 		statusflags^=S_Modified;
 	else
 		statusflags|=S_Modified;
-}
-
-void /* Set screen title to arg->v, set warning bit */
-f_warn(const Arg *arg) {
-	tmptitle=(char*)arg->v;
-	statusflags|=S_Warned;
 }
 
 
@@ -1061,7 +1057,7 @@ i_readfile(char *fname) {
 	ssize_t n;
 	char *buf = NULL;
 
-	if(!strcmp(fname, "-")) {
+	if(fname == NULL || !strcmp(fname, "-")) {
 		fd=0;
 		reset_shell_mode();
 	} else {
@@ -1185,7 +1181,7 @@ i_setup(void){
 	regcomp(find_res[0], "\0\0", 0); /* This should not match anything */
 	regcomp(find_res[1], "\0\0", 0);
 
-	initscr();
+	newterm(NULL, stderr, stdin);
 	if(has_colors()) {
 		start_color();
 		use_default_colors();
@@ -1452,12 +1448,12 @@ i_usage(void) {
 }
 
 bool /* Write buffer to disk */
-i_writefile(void) {
-	int fd;
+i_writefile(char *fname) {
+	int fd=1; /* default: write to stdout */
 	bool wok=TRUE;
 	Line *l;
 
-	if (filename == NULL || (fd = open(filename, O_WRONLY|O_TRUNC|O_CREAT, S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
+	if (fname != NULL && (fd = open(fname, O_WRONLY|O_TRUNC|O_CREAT, S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
 		/* error */
 		tmptitle="WARNING! Can't save file!!!";
 		return FALSE;
