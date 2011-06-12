@@ -1181,7 +1181,10 @@ i_setup(void){
 	regcomp(find_res[0], "\0\0", 0); /* This should not match anything */
 	regcomp(find_res[1], "\0\0", 0);
 
-	newterm(NULL, stderr, stdin);
+	if(!newterm(NULL, stderr, stdin)) {
+		newterm("xterm", stderr, stdin);
+		tmptitle="WARNING! $TERM not recognized!!!";
+	}
 	if(has_colors()) {
 		start_color();
 		use_default_colors();
