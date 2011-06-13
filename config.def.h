@@ -1,7 +1,7 @@
 /* A simplified way to customize */
 #define HILIGHT_CURRENT 1
 #define SHOW_NONPRINT   0
-#define HILIGHT_SYNTAX  1 /* TODO: implement this */
+#define HILIGHT_SYNTAX  1
 
 /* Things unlikely to be changed, yet still in the config.h file */
 static const bool   isutf8     = TRUE;
@@ -157,6 +157,7 @@ static Command cmds[] = { /* Use only f_ funcs that take Arg.v */
 #define B "(^| |\t|\\(|\\)|\\[|\\]|\\{|\\}|$)"
 
 static Syntax syntaxes[] = {
+#if HILIGHT_SYNTAX
 {"c", NULL, "\\.(c(pp|xx)?|h(pp|xx)?|cc)$", { NULL }, {
 	/* HiRed   */  "",
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)"B,
@@ -221,6 +222,9 @@ static Syntax syntaxes[] = {
 	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
+#else  /* HILIGHT_SYNTAX */
+{"", NULL, "\0", { NULL }, { "\0", "\0", "\0", "\0", "\0", "\0", "\0", "\0" } }
+#endif /* HILIGHT_SYNTAX */
 };
 
 /* Colors */
