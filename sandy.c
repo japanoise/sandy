@@ -81,6 +81,7 @@ typedef struct {                      /** A command read at the fifo */
 	const char *re_text;          /* A regex to match the command, must have a parentheses group for argument */
 	bool (*test[2])(void);        /* Conditions to match */
 	void (*func)(const Arg *arg); /* Function to perform, argument is determined as arg->v from regex above */
+	const Arg arg;                /* Argument to func() */
 } Command;
 
 #define SYN_COLORS 8
@@ -1037,7 +1038,8 @@ i_readfifo(void) {
 				&& (cmds[i].test[0] == NULL || cmds[i].test[0]())
 				&& (cmds[i].test[1] == NULL || cmds[i].test[1]())) {
 				*(buf+result[1].rm_eo) = '\0';
-				cmds[i].func(&(const Arg){ .v = (buf+result[1].rm_so)});
+				if(cmds[i].arg.i > 0) cmds[i].func(&(cmds[i].arg));
+				else cmds[i].func(&(const Arg){ .v = (buf+result[1].rm_so)});
 				break;
 			}
 		buf=strtok(NULL, "\n");

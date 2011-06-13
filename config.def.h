@@ -29,9 +29,9 @@ static const char   nlstr[1]   = { 0 };
 
 #define FIND   PROMPT("Find:",        "${SANDY_FIND}",   "/")
 #define FINDBW PROMPT("Find (back):", "${SANDY_FIND}",   "?")
-#define PIPE   PROMPT("Pipe:",        "${SANDY_PIPE}",   "pipe ")
+#define PIPE   PROMPT("Pipe:",        "${SANDY_PIPE}",   "!")
 #define SAVEAS PROMPT("Save as:",     "${SANDY_FILE}",   "w")
-#define CMD_P  PROMPT("Command:",     "/\n?\nw\npipe\nsyntax\noffset", "")
+#define CMD_P  PROMPT("Command:",     "/\n?\nw\n!\nsyntax\noffset", "")
 
 /* Args to f_pipe / f_pipero */
 /* TODO: make sandy-sel to wrap xsel or standalone */
@@ -141,16 +141,21 @@ static const Key stdkeys[] = {
 };
 
 /* Commands read at the fifo */
-static Command cmds[] = { /* Use only f_ funcs that take Arg.v */
-/* \0, regex,             tests,        func */
-{NULL, "^([0-9]+)$",      { 0,     0 }, f_line   },
-{NULL, "^/(.*)$",         { 0,     0 }, f_findfw },
-{NULL, "^\\?(.*)$",       { 0,     0 }, f_findbw },
-{NULL, "^pipe (.*)$",     { t_rw,  0 }, f_pipe   },
-{NULL, "^pipe (.*)$",     { 0,     0 }, f_pipero },
-{NULL, "^w[ \t]*(.*)$",   { 0,     0 }, f_save   },
-{NULL, "^syntax (.*)$",   { 0,     0 }, f_syntax },
-{NULL, "^offset (.*)$",   { 0,     0 }, f_offset },
+static Command cmds[] = { /* if(arg == 0) arg.v=regex_match */
+/* \0, regex,             tests,        func      arg */
+{NULL, "^([0-9]+)$",      { 0,     0 }, f_line ,  { 0 } },
+{NULL, "^/(.*)$",         { 0,     0 }, f_findfw, { 0 } },
+{NULL, "^\\?(.*)$",       { 0,     0 }, f_findbw, { 0 } },
+{NULL, "^![ \t]*(.*)$",   { t_rw,  0 }, f_pipe,   { 0 } },
+{NULL, "^![ /t]*(.*)$",   { 0,     0 }, f_pipero, { 0 } },
+{NULL, "^w[ \t]*(.*)$",   { 0,     0 }, f_save,   { 0 } },
+{NULL, "^syntax (.*)$",   { 0,     0 }, f_syntax, { 0 } },
+{NULL, "^offset (.*)$",   { 0,     0 }, f_offset, { 0 } },
+{NULL, "^set icase$",     { 0,     0 }, f_toggle, { .i = S_CaseIns } },
+{NULL, "^set ro$",        { 0,     0 }, f_toggle, { .i = S_Readonly } },
+{NULL, "^q$",             { t_mod, 0 }, f_toggle, { .i = S_Warned } },
+{NULL, "^q$",             { 0,     0 }, f_toggle, { .i = S_Running } },
+{NULL, "^q!$",            { 0,     0 }, f_toggle, { .i = S_Running } },
 };
 
 /* Syntax color definition */
