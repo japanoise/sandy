@@ -402,7 +402,7 @@ f_pipero(const Arg *arg) {
 	lastaction=LastPipeRO;
 }
 
-void /* Repeat the last action */
+void /* Repeat the last action. Your responsibility: call only if t_rw() */
 f_repeat(const Arg *arg) {
 	Filepos pos;
 	i_sortpos(&fsel, &fcur);
@@ -816,7 +816,8 @@ i_edit(void) {
 			goto edit_top;
 		}
 		statusflags&=~(S_InsEsc);
-		f_insert(&(const Arg){ .v = c });
+		if(t_rw()) f_insert(&(const Arg){ .v = c });
+		else tmptitle="WARNING! File is read-only!!!";
 	}
 }
 
