@@ -209,6 +209,7 @@ static void           i_cleanup(int);
 static void           i_deltext(Filepos, Filepos);
 static void           i_die(char *str);
 static void           i_dirtyrange(Line*, Line*);
+static bool           i_dotests(bool (*a[])(void));
 static void           i_edit(void);
 static void           i_find(bool);
 static char          *i_gettext(Filepos, Filepos);
@@ -728,10 +729,19 @@ i_deltext(Filepos pos0, Filepos pos1) {
 	if(ldel!=NULL || vlines != VLINES(pos0.l)) statusflags|=S_DirtyDown;
 }
 
+bool /* test an array of t_ functions */
+i_dotests(bool (*a[])(void)) {
+	int i;
+
+	for(i=0; i<LENGTH(a); i++)
+		if(a[i] && !(a[i]())) return FALSE;
+	return TRUE;
+}
+
 void /* Main editing loop */
 i_edit(void) {
 	int ch, i;
-	char c[7];
+	int c[7];
 	fd_set fds;
 	Filepos oldsel, oldcur;
 
@@ -773,11 +783,7 @@ i_edit(void) {
 			if(ch==KEY_MOUSE) {
 				i_mouse();
 			} else for(i=0; i<LENGTH(curskeys); i++) {
-				if(ch == curskeys[i].keyv[0] /* NCurses special chars come as a single 'int' */
-					&& ( curskeys[i].test[0] == NULL || curskeys[i].test[0]() )
-					&& ( curskeys[i].test[1] == NULL || curskeys[i].test[1]() )
-					&& ( curskeys[i].test[2] == NULL || curskeys[i].test[2]() )
-					&& ( curskeys[i].test[3] == NULL || curskeys[i].test[3]() ) ) {
+				if(memcmp(&ch, curskeys[i].keyv, sizeof ch) == 0 && i_dotests(curskeys[i].test) ) {
 					if(curskeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					curskeys[i].func(&(curskeys[i].arg));
 					break;
@@ -801,13 +807,7 @@ i_edit(void) {
 
 		if(!(statusflags&S_InsEsc) && ISCTRL(c[0])) {
 			for(i=0; i<LENGTH(stdkeys); i++) {
-				if(c[0] == stdkeys[i].keyv[0] && c[1] == stdkeys[i].keyv[1]
-				&& c[2] == stdkeys[i].keyv[2] && c[3] == stdkeys[i].keyv[3]
-				&& c[4] == stdkeys[i].keyv[4] && c[5] == stdkeys[i].keyv[5]
-					&& ( stdkeys[i].test[0] == NULL || stdkeys[i].test[0]() )
-					&& ( stdkeys[i].test[1] == NULL || stdkeys[i].test[1]() )
-					&& ( stdkeys[i].test[2] == NULL || stdkeys[i].test[2]() )
-					&& ( stdkeys[i].test[3] == NULL || stdkeys[i].test[3]() ) ) {
+				if(memcmp(c, stdkeys[i].keyv, sizeof stdkeys[i].keyv) == 0 && i_dotests(stdkeys[i].test) ) {
 					if(stdkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					stdkeys[i].func(&(stdkeys[i].arg));
 					break;
@@ -1035,9 +1035,7 @@ i_readfifo(void) {
 	buf=strtok(buf, "\n");
 	while(buf != NULL) {
 		for(i=0; i<LENGTH(cmds); i++)
-			if(!regexec(cmds[i].re, buf, 2, result, 0)
-				&& (cmds[i].test[0] == NULL || cmds[i].test[0]())
-				&& (cmds[i].test[1] == NULL || cmds[i].test[1]())) {
+			if(!regexec(cmds[i].re, buf, 2, result, 0) && i_dotests(cmds[i].test) ) {
 				*(buf+result[1].rm_eo) = '\0';
 				if(cmds[i].arg.i > 0) cmds[i].func(&(cmds[i].arg));
 				else cmds[i].func(&(const Arg){ .v = (buf+result[1].rm_so)});

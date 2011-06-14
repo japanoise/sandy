@@ -52,7 +52,7 @@ static const char   nlstr[1]   = { 0 };
 #define CONTROL(ch)   {(ch ^ 0x40)}
 #define META(ch)      {0x1B, ch}
 
-static const Key curskeys[] = { /* Don't use CONTROL or META here */
+static Key curskeys[] = { /* Don't use CONTROL or META here */
 /* keyv,            tests,                     func,      arg */
 { {KEY_BACKSPACE},  { t_sel, t_rw, 0,   0 },   f_delete,  { .m = m_tosel    } },
 { {KEY_BACKSPACE},  { t_rw,  0,    0,   0 },   f_delete,  { .m = m_prevchar } },
@@ -75,7 +75,7 @@ static const Key curskeys[] = { /* Don't use CONTROL or META here */
 { {KEY_SRIGHT},     { 0,     0,    0,   0 },   f_move,    { .m = m_nextword } },
 };
 
-static const Key stdkeys[] = {
+static Key stdkeys[] = {
 /* keyv,        test,                     func,        arg */
 { CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { CONTROL('A'), { t_bol, 0,    0,   0 },  f_move,      { .m = m_prevscr } },
@@ -125,8 +125,8 @@ static const Key stdkeys[] = {
 { CONTROL('W'), { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
 { CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword } },
 { CONTROL('W'), { 0,     0,    0,   0 },  f_select,    { .m = m_prevword } },
-{ CONTROL('X'), { t_mod ,0,    0,   0 },  f_save,      { 0 } },
-{ CONTROL('X'), { 0     ,0,    0,   0 },  f_toggle,    { .i = S_Running } },
+{ CONTROL('X'), { t_mod, 0,    0,   0 },  f_save,      { 0 } },
+{ CONTROL('X'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
 { CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipe,      FROMCLIP },
 { CONTROL('Z'), { 0     ,0,    0,   0 },  f_suspend,   { 0 } },
 { CONTROL('['), { 0,     0,    0,   0 },  f_spawn,     CMD_P },  /* TODO: Sam's? */
