@@ -755,7 +755,7 @@ i_edit(void) {
 		if(fsel.l != oldsel.l) i_dirtyrange(oldsel.l, fsel.l);
 		else if(fsel.o != oldsel.o) fsel.l->dirty=TRUE;
 		if(fcur.l != oldcur.l) i_dirtyrange(oldcur.l, fcur.l);
-		else if(fcur.o != oldcur.o) fcur.l->dirty=TRUE;
+		else if(fcur.o != oldcur.o && t_sel()) fcur.l->dirty=TRUE;
 		oldsel=fsel, oldcur=fcur;
 		i_update();
 
