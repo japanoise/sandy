@@ -1303,13 +1303,13 @@ i_update(void) {
 		if(l==fsel.l) /* Selection starts before screen view */
 			selection=!selection;
 	}
-	for(irow=0, l=scrline; l; l=l->next, irow+=vlines) {
-		vlines=VLINES(l);
+	for(i=irow=0, l=scrline; l; l=l->next, irow+=vlines) {
+		if((vlines=VLINES(l)) > 1) i=1; /* i=1 if any line before fcur.l has vlines>1*/
 		if(fcur.l==l) {
 			if(irow+vlines>2*LINES2) statusflags|=S_DirtyScr;
-			else statusflags|=S_DirtyDown; /* lines with vlines>1 require this */
 			while(irow+vlines>LINES2 && scrline->next) { /* Can't have fcur.l after screen end, move scrline down */
 				if(!(statusflags&S_DirtyScr)) wscrl(textwin, VLINES(scrline));
+				if(i) statusflags|=S_DirtyDown; /* lines with vlines>1 require this. */
 				irow -= VLINES(scrline);
 				if(scrline==fsel.l) selection=!selection; /* We just scrolled past the selection point */
 				scrline=scrline->next;
