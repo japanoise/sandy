@@ -105,7 +105,7 @@ struct Undo {                       /** Undo information */
 /* ENUMS */
 /* Colors */
 enum { DefFG, CurFG, SelFG, SpcFG, CtrlFG, Syn0FG, Syn1FG, Syn2FG, Syn3FG, Syn4FG, Syn5FG, Syn6FG, Syn7FG, LastFG, };
-enum { DefBG, CurBG, SelBG, /* Warning: BGs MUST have a matching FG */     LastBG, };
+enum { DefBG, CurBG, SelBG, /* WARNING: BGs MUST have a matching FG */     LastBG, };
 
 /* arg->i to use in f_extsel() */
 enum { ExtDefault, ExtWord, ExtLines, ExtAll, };
@@ -519,7 +519,7 @@ f_toggle(const Arg *arg) {
 		i_setfindterm(getenv(envs[EnvFind]));
 	break;
 	case S_Warned: /* Set warning title */
-		tmptitle="Warning! File Modified!!!";
+		tmptitle="WARNING! File Modified!!!";
 	break;
 	}
 }
@@ -1372,7 +1372,7 @@ i_update(void) {
 							for(i=0; i<UTF8LEN(l->c[ichar]); i++)
 								if(ichar+i<l->len) c[i]=l->c[ichar+i];
 								else c[i]=0x00;
-							c[i]=0x00; /* Warning: we use i later... */
+							c[i]=0x00; /* WARNING: we use i later... */
 							waddstr(textwin, c);
 						} else {
 							waddch(textwin, l->c[ichar]);
