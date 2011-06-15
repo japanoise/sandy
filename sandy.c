@@ -77,7 +77,6 @@ typedef struct {                      /** A keybinding */
 } Key;
 
 typedef struct {                      /** A command read at the fifo */
-	regex_t *re;                  /* (internal) */
 	const char *re_text;          /* A regex to match the command, must have a parentheses group for argument */
 	bool (*test[2])(void);        /* Conditions to match */
 	void (*func)(const Arg *arg); /* Function to perform, argument is determined as arg->v from regex above */
@@ -86,11 +85,9 @@ typedef struct {                      /** A command read at the fifo */
 
 #define SYN_COLORS 8
 typedef struct {                      /** A syntax definition */
-	char    *name;                /* Syntax name */
-	regex_t *file_re;             /* (internal) */
-	char    *file_re_text;        /* Apply to files matching this regex */
-	regex_t *re[SYN_COLORS];      /* (internal) */
-	char    *re_text[SYN_COLORS]; /* Apply colors (in order) matching these regexes */
+	char *name;                   /* Syntax name */
+	char *file_re_text;           /* Apply to files matching this regex */
+	char *re_text[SYN_COLORS];    /* Apply colors (in order) matching these regexes */
 } Syntax;
 
 typedef struct Undo Undo;
@@ -154,7 +151,7 @@ static Line     *scrline;                   /* First line seen on screen */
 static Filepos   fsel;                      /* Selection point on file */
 static Filepos   fcur;                      /* Insert position on file, cursor, current position */
 static Filepos   fmrk = { NULL, 0 };        /* Mark */
-static Syntax   *syntx = NULL;              /* Current syntax */
+static int       syntx = -1;                /* Current syntax index */
 static regex_t  *find_res[2];               /* Compiled regex for search term */
 static int       sel_re = 0;                /* Index to the above, we keep 2 REs so regexec does not segfault */
 static char     *fifopath = NULL;           /* Path to command fifo */
@@ -209,7 +206,7 @@ static void           i_cleanup(int);
 static void           i_deltext(Filepos, Filepos);
 static void           i_die(char *str);
 static void           i_dirtyrange(Line*, Line*);
-static bool           i_dotests(bool (*a[])(void));
+static bool           i_dotests(bool (*const a[])(void));
 static void           i_edit(void);
 static void           i_find(bool);
 static char          *i_gettext(Filepos, Filepos);
@@ -260,6 +257,11 @@ static Filepos m_tomark(Filepos);
 static Filepos m_tosel(Filepos);
 
 #include "config.h"
+
+/* Some extra stuff that depends on config.h */
+static regex_t *cmd_res[LENGTH(cmds)];
+static regex_t *syntax_file_res[LENGTH(syntaxes)];
+static regex_t *syntax_res[LENGTH(syntaxes)][SYN_COLORS];
 
 /* F_* FUNCTIONS
 	Can be linked to an action or keybinding. Always return void and take const Arg* */
@@ -494,18 +496,18 @@ f_syntax(const Arg *arg) {
 	statusflags=(statusflags|S_DirtyScr)&~S_Selecting;
 	for(i=0; i<LENGTH(syntaxes); i++)
 		if((arg && arg->v) ? !strcmp(arg->v, syntaxes[i].name)
-				   : !regexec(syntaxes[i].file_re, filename, 1, NULL, 0)) {
+				   : !regexec(syntax_file_res[i], filename, 1, NULL, 0)) {
 			for(j=0; j<SYN_COLORS; j++) {
-				if(syntx && syntx->re[j]) regfree(syntx->re[j]);
-				if(regcomp(syntaxes[i].re[j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) i_die("Faulty regex.\n");
+				if((syntx >= 0) && syntax_res[syntx][j]) regfree(syntax_res[syntx][j]);
+				if(regcomp(syntax_res[i][j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) i_die("Faulty regex.\n");
 			}
-			syntx=&syntaxes[i];
-			setenv(envs[EnvSyntax], syntx->name, 1);
+			syntx=i;
+			setenv(envs[EnvSyntax], syntaxes[syntx].name, 1);
 			return;;
 		}
 	for(i=0; i<SYN_COLORS; i++)
-		if(syntx && syntx->re[i]) regfree(syntx->re[i]);
-	syntx=NULL;
+		if((syntx >=0) && syntax_res[syntx][i]) regfree(syntax_res[syntx][i]);
+	syntx=-1;
 	setenv(envs[EnvSyntax], "none", 1);
 }
 
@@ -673,11 +675,11 @@ i_cleanup(int sig) {
 	free(filename);
 	free(title);
 	for(i=0; i<LENGTH(cmds); i++)
-		regfree(cmds[i].re);
+		regfree(cmd_res[i]);
 	for(i=0; i<LENGTH(syntaxes); i++)
-		regfree(syntaxes[i].file_re);
-	if(syntx) for(i=0; i<SYN_COLORS; i++)
-			regfree(syntx->re[i]);
+		regfree(syntax_file_res[i]);
+	if(syntx >= 0) for(i=0; i<SYN_COLORS; i++)
+			regfree(syntax_res[syntx][i]);
 	regfree(find_res[0]);
 	regfree(find_res[1]);
 	endwin();
@@ -730,7 +732,7 @@ i_deltext(Filepos pos0, Filepos pos1) {
 }
 
 bool /* test an array of t_ functions */
-i_dotests(bool (*a[])(void)) {
+i_dotests(bool (*const a[])(void)) {
 	int i;
 
 	for(i=0; i<LENGTH(a); i++)
@@ -1035,7 +1037,7 @@ i_readfifo(void) {
 	buf=strtok(buf, "\n");
 	while(buf != NULL) {
 		for(i=0; i<LENGTH(cmds); i++)
-			if(!regexec(cmds[i].re, buf, 2, result, 0) && i_dotests(cmds[i].test) ) {
+			if(!regexec(cmd_res[i], buf, 2, result, 0) && i_dotests(cmds[i].test) ) {
 				*(buf+result[1].rm_eo) = '\0';
 				if(cmds[i].arg.i > 0) cmds[i].func(&(cmds[i].arg));
 				else cmds[i].func(&(const Arg){ .v = (buf+result[1].rm_so)});
@@ -1164,15 +1166,15 @@ i_setup(void){
 		i_die("Can't malloc.\n");
 
 	for(i=0; i<LENGTH(cmds); i++) {
-		if((cmds[i].re=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
-		if(regcomp(cmds[i].re, cmds[i].re_text, REG_EXTENDED|REG_ICASE|REG_NEWLINE)) i_die("Faulty regex.\n");
+		if((cmd_res[i]=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
+		if(regcomp(cmd_res[i], cmds[i].re_text, REG_EXTENDED|REG_ICASE|REG_NEWLINE)) i_die("Faulty regex.\n");
 	}
 
 	for(i=0; i<LENGTH(syntaxes); i++) {
-		if((syntaxes[i].file_re=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
-		if(regcomp(syntaxes[i].file_re, syntaxes[i].file_re_text, REG_EXTENDED|REG_NOSUB|REG_ICASE|REG_NEWLINE)) i_die("Faulty regex.\n");
+		if((syntax_file_res[i]=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
+		if(regcomp(syntax_file_res[i], syntaxes[i].file_re_text, REG_EXTENDED|REG_NOSUB|REG_ICASE|REG_NEWLINE)) i_die("Faulty regex.\n");
 		for(j=0; j<SYN_COLORS; j++)
-			if((syntaxes[i].re[j]=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
+			if((syntax_res[i][j]=(regex_t*)calloc(1, sizeof (regex_t))) == NULL) i_die("Can't malloc.\n");
 	}
 
 	snprintf(fifopath, PATHSIZ, "%s%d", fifobase, getpid());
@@ -1335,8 +1337,8 @@ i_update(void) {
 		if(statusflags & S_DirtyScr || (l && l->dirty && (statusflags & S_DirtyDown ? statusflags|=S_DirtyScr : 1) )) {
 			/* Print line content */
 			if(l) l->dirty=FALSE;
-			if(syntx && l) for(i=0; i<SYN_COLORS; i++)
-				if(regexec(syntx->re[i], l->c, 1, match[i], 0) || match[i][0].rm_so == match[i][0].rm_eo)
+			if(syntx >= 0 && l) for(i=0; i<SYN_COLORS; i++)
+				if(regexec(syntax_res[syntx][i], l->c, 1, match[i], 0) || match[i][0].rm_so == match[i][0].rm_eo)
 					match[i][0].rm_so=match[i][0].rm_eo=-1;
 			for(ixrow=ichar=ivchar=0; ixrow<vlines && (irow+ixrow)<LINES2; ixrow++) {
 				wmove(textwin, (irow+ixrow), (ivchar%cols));
@@ -1346,10 +1348,10 @@ i_update(void) {
 					ifg=DefFG, ibg=DefBG;
 					if(fcur.l==l) ifg=CurFG, ibg=CurBG;
 					if(selection) ifg=SelFG, ibg=SelBG;
-					if(syntx && l) for(i=0; i<SYN_COLORS; i++) {
+					if(syntx >=0 && l) for(i=0; i<SYN_COLORS; i++) {
 						if(match[i][0].rm_so == -1) continue;
 						if(ichar >= (size_t)match[i][0].rm_eo) {
-							if(regexec(syntx->re[i], &l->c[ichar], 1, match[i], REG_NOTBOL) || match[i][0].rm_so == match[i][0].rm_eo)
+							if(regexec(syntax_res[syntx][i], &l->c[ichar], 1, match[i], REG_NOTBOL) || match[i][0].rm_so == match[i][0].rm_eo)
 								continue;
 							match[i][0].rm_so+=ichar;
 							match[i][0].rm_eo+=ichar;
@@ -1415,7 +1417,7 @@ i_update(void) {
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
 		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
 			(filename == NULL?"<No file>":filename),
-			(syntx?syntx->name:"none"),
+			(syntx>=0 ? syntaxes[syntx].name : "none"),
 			(t_mod()?"[+]":""),
 			(!t_rw()?"[RO]":""),
 			(statusflags&S_CaseIns?"[icase]":""),

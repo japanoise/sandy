@@ -52,7 +52,7 @@ static const char   nlstr[1]   = { 0 };
 #define CONTROL(ch)   {(ch ^ 0x40)}
 #define META(ch)      {0x1B, ch}
 
-static Key curskeys[] = { /* Don't use CONTROL or META here */
+static const Key curskeys[] = { /* Don't use CONTROL or META here */
 /* keyv,            tests,                     func,      arg */
 { {KEY_BACKSPACE},  { t_sel, t_rw, 0,   0 },   f_delete,  { .m = m_tosel    } },
 { {KEY_BACKSPACE},  { t_rw,  0,    0,   0 },   f_delete,  { .m = m_prevchar } },
@@ -75,7 +75,7 @@ static Key curskeys[] = { /* Don't use CONTROL or META here */
 { {KEY_SRIGHT},     { 0,     0,    0,   0 },   f_move,    { .m = m_nextword } },
 };
 
-static Key stdkeys[] = {
+static const Key stdkeys[] = {
 /* keyv,        test,                     func,        arg */
 { CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { CONTROL('A'), { t_bol, 0,    0,   0 },  f_move,      { .m = m_prevscr } },
@@ -137,29 +137,29 @@ static Key stdkeys[] = {
 };
 
 /* Commands read at the fifo */
-static Command cmds[] = { /* if(arg == 0) arg.v=regex_match */
-/* \0, regex,             tests,        func      arg */
-{NULL, "^([0-9]+)$",      { 0,     0 }, f_line ,  { 0 } },
-{NULL, "^/(.*)$",         { 0,     0 }, f_findfw, { 0 } },
-{NULL, "^\\?(.*)$",       { 0,     0 }, f_findbw, { 0 } },
-{NULL, "^![ \t]*(.*)$",   { t_rw,  0 }, f_pipe,   { 0 } },
-{NULL, "^![ /t]*(.*)$",   { 0,     0 }, f_pipero, { 0 } },
-{NULL, "^w[ \t]*(.*)$",   { 0,     0 }, f_save,   { 0 } },
-{NULL, "^syntax (.*)$",   { 0,     0 }, f_syntax, { 0 } },
-{NULL, "^offset (.*)$",   { 0,     0 }, f_offset, { 0 } },
-{NULL, "^set icase$",     { 0,     0 }, f_toggle, { .i = S_CaseIns } },
-{NULL, "^set ro$",        { 0,     0 }, f_toggle, { .i = S_Readonly } },
-{NULL, "^q$",             { t_mod, 0 }, f_toggle, { .i = S_Warned } },
-{NULL, "^q$",             { 0,     0 }, f_toggle, { .i = S_Running } },
-{NULL, "^q!$",            { 0,     0 }, f_toggle, { .i = S_Running } },
+static const Command cmds[] = { /* if(arg == 0) arg.v=regex_match */
+/* regex,           tests,        func      arg */
+{"^([0-9]+)$",      { 0,     0 }, f_line ,  { 0 } },
+{"^/(.*)$",         { 0,     0 }, f_findfw, { 0 } },
+{"^\\?(.*)$",       { 0,     0 }, f_findbw, { 0 } },
+{"^![ \t]*(.*)$",   { t_rw,  0 }, f_pipe,   { 0 } },
+{"^![ /t]*(.*)$",   { 0,     0 }, f_pipero, { 0 } },
+{"^w[ \t]*(.*)$",   { 0,     0 }, f_save,   { 0 } },
+{"^syntax (.*)$",   { 0,     0 }, f_syntax, { 0 } },
+{"^offset (.*)$",   { 0,     0 }, f_offset, { 0 } },
+{"^set icase$",     { 0,     0 }, f_toggle, { .i = S_CaseIns } },
+{"^set ro$",        { 0,     0 }, f_toggle, { .i = S_Readonly } },
+{"^q$",             { t_mod, 0 }, f_toggle, { .i = S_Warned } },
+{"^q$",             { 0,     0 }, f_toggle, { .i = S_Running } },
+{"^q!$",            { 0,     0 }, f_toggle, { .i = S_Running } },
 };
 
 /* Syntax color definition */
 #define B "(^| |\t|\\(|\\)|\\[|\\]|\\{|\\}|$)"
 
-static Syntax syntaxes[] = {
+static const Syntax syntaxes[] = {
 #if HILIGHT_SYNTAX
-{"c", NULL, "\\.(c(pp|xx)?|h(pp|xx)?|cc)$", { NULL }, {
+{"c", "\\.(c(pp|xx)?|h(pp|xx)?|cc)$", {
 	/* HiRed   */  "",
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)"B,
 	/* LoGreen */  B"(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)"B,
@@ -170,7 +170,7 @@ static Syntax syntaxes[] = {
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 
-{"sh", NULL, "\\.sh$", { NULL }, {
+{"sh", "\\.sh$", {
 	/* HiRed   */  "",
 	/* HiGreen */  "^[0-9A-Z_]+\\(\\)",
 	/* LoGreen */  B"(case|do|done|elif|else|esac|exit|fi|for|function|if|in|local|read|return|select|shift|then|time|until|while)"B,
@@ -181,7 +181,7 @@ static Syntax syntaxes[] = {
 	/* LoBlue  */  "#.*$",
 	} },
 
-{"makefile", NULL, "(Makefile[^/]*|\\.mk)$", { NULL }, {
+{"makefile", "(Makefile[^/]*|\\.mk)$", {
 	/* HiRed   */  "",
 	/* HiGreen */  "",
 	/* LoGreen */  "\\$+[{(][a-zA-Z0-9_-]+[})]",
@@ -192,7 +192,7 @@ static Syntax syntaxes[] = {
 	/* LoBlue  */  "#.*$",
 	} },
 
-{"man", NULL, "\\.[1-9]x?$", { NULL }, {
+{"man", "\\.[1-9]x?$", {
 	/* HiRed   */  "\\.(BR?|I[PR]?).*$",
 	/* HiGreen */  "",
 	/* LoGreen */  "\\.(S|T)H.*$",
@@ -203,7 +203,7 @@ static Syntax syntaxes[] = {
 	/* LoBlue  */  "\\\\f[BIPR]",
 	} },
 
-{"vala", NULL, "\\.(vapi|vala)$", { NULL }, {
+{"vala", "\\.(vapi|vala)$", {
 	/* HiRed   */  B"[A-Z_][0-9A-Z_]+\\>",
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|get|set|value|out|ref|enum)"B,
 	/* LoGreen */  B"(uint|uint8|uint16|uint32|uint64|bool|byte|ssize_t|size_t|char|double|string|float|int|long|short|this|base|transient|void|true|false|null|unowned|owned)"B,
@@ -213,7 +213,7 @@ static Syntax syntaxes[] = {
 	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
-{"java", NULL, "\\.java$", { NULL }, {
+{"java", "\\.java$", {
 	/* HiRed   */  B"[A-Z_][0-9A-Z_]+\\>",
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch)"B,
 	/* LoGreen */  B"(boolean|byte|char|double|float|int|long|short|transient|void|true|false|null)"B,
@@ -224,7 +224,7 @@ static Syntax syntaxes[] = {
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 #else  /* HILIGHT_SYNTAX */
-{"", NULL, "\0", { NULL }, { "\0", "\0", "\0", "\0", "\0", "\0", "\0", "\0" } }
+{"", "\0", { "\0", "\0", "\0", "\0", "\0", "\0", "\0", "\0" } }
 #endif /* HILIGHT_SYNTAX */
 };
 
