@@ -1,6 +1,6 @@
 /* A simplified way to customize */
 #define HILIGHT_CURRENT 1
-#define SHOW_NONPRINT   0
+#define SHOW_NONPRINT   1
 #define HILIGHT_SYNTAX  1
 
 /* Things unlikely to be changed, yet still in the config.h file */
@@ -155,7 +155,8 @@ static const Command cmds[] = { /* if(arg == 0) arg.v=regex_match */
 };
 
 /* Syntax color definition */
-#define B "(^| |\t|\\(|\\)|\\[|\\]|\\{|\\}|$)"
+#define B "\\b"
+/* #define B "^| |\t|\\(|\\)|\\[|\\]|\\{|\\}|\\||$"  -- Use this if \b is not in your libc's regex implementation */
 
 static const Syntax syntaxes[] = {
 #if HILIGHT_SYNTAX
@@ -164,7 +165,7 @@ static const Syntax syntaxes[] = {
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)"B,
 	/* LoGreen */  B"(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)"B,
 	/* HiMag   */  B"(goto|continue|break|return)"B,
-	/* LoMag   */  "(^#(define|include(_next)?|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma))|"B"\\<[A-Z_][0-9A-Z_]+\\>"B"",
+	/* LoMag   */  "(^#(define|include(_next)?|(un|ifn?)def|endif|el(if|se)|if|warning|error|pragma))|"B"[A-Z_][0-9A-Z_]+"B"",
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
 	/* LoRed   */  "(\"(\\\\.|[^\"])*\")",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",

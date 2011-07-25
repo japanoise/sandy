@@ -1406,7 +1406,7 @@ i_update(void) {
 	/* Update env*/
 	snprintf(buf, 16, "%ld", ncur);
 	setenv(envs[EnvLine], buf, 1);
-	snprintf(buf, 16, "%d", fcur.o);
+	snprintf(buf, 16, "%d", (int)fcur.o);
 	setenv(envs[EnvOffset], buf, 1);
 
 	/* Update title */
@@ -1422,7 +1422,7 @@ i_update(void) {
 			(!t_rw()?"[RO]":""),
 			(statusflags&S_CaseIns?"[icase]":""),
 			(statusflags&S_Selecting?"[SEL]":""),
-			ncur, fcur.o,
+			ncur, (int)fcur.o,
 			(scrline==fstline?
 				(nlst<lines3?"All":"Top"):
 				(nlst-nscr<lines3?"Bot":buf)
