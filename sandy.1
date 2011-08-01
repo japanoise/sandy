@@ -61,24 +61,22 @@ Move cursor to next line.
 .BR Ctrl\-p " or " Up
 Move cursor to previous line.
 .TP
-.BR Shift\-Right
+.BR Meta\-f " or " Shift\-Right
 Move cursor to the end of this or next word.
 .TP
-.BR Shift\-Left
+.BR Meta\-b " or " Shift\-Left
 Move cursor to the start of this or previous word.
 .TP
 .BR Ctrl\-a " or " Home
-Move cursor to the beginning of the current line or if already there, one full
-screen up.
+Move cursor to the beginning of the current line.
 .TP
 .BR Ctrl\-e " or " End
-Move cursor to the end of the current line or if alredy there, one full screen
-down.
+Move cursor to the end of the current line.
 .TP
-.BR Prev
+.BR Ctrl\-v " or " Prev
 Move cursor one full screen up.
 .TP
-.BR Next
+.BR Met\-v " or " Next
 Move cursor one full screen down.
 .TP
 .BR Shift\-Home
@@ -93,9 +91,15 @@ Text is searched and selected using POSIX regular expressions
 Prompt for a search regex forward or if there is a selection, repeat search
 forward.
 .TP
+.B Meta\-s
+Repeat search forward.
+.TP
 .B Ctrl\-r
 Prompt for a search regex backwards or if there is a selection, repeat
 search backwards.
+.TP
+.B Meta\-r
+Repeat search backwards.
 .TP
 .B Ctrl\-\]
 Extend selection to word, line, or full file from current.
@@ -125,7 +129,7 @@ Delete to end of line or join with next line.
 .B Ctrl\-w
 Delete to beginning of word or previous word.
 .TP
-.B Ctrl\-q
+.B Meta\-d
 Delete to end of word or next word.
 .TP
 .BR Ctrl\-Space " or " Ctrl\-`
@@ -144,6 +148,15 @@ These operations affect the selected text if any.
 .B Ctrl\-\e
 Prompt for a command to pipe text through.
 .TP
+.B Meta\-c
+Capitalize selection.
+.TP
+.B Meta\-l
+Lowercase selection.
+.TP
+.B Meta\-u
+Uppercase selection.
+.TP
 .BR Ctrl\-y " or " Shift\-Insert
 Replace (paste, yank) with text from the clipboard.
 .TP
@@ -157,7 +170,7 @@ Copy to the clipboard and delete.
 .B Ctrl\-l
 Center screen in current line, refresh.
 .TP
-.B Ctrl\-v
+.B Ctrl\-q
 Insert next character as\-is.
 .TP
 .B Ctrl\-z
