@@ -78,7 +78,6 @@ static const Key curskeys[] = { /* Don't use CONTROL or META here */
 static const Key stdkeys[] = {
 /* keyv,        test,                     func,        arg */
 { CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
-{ CONTROL('A'), { t_bol, 0,    0,   0 },  f_move,      { .m = m_prevscr } },
 { CONTROL('A'), { 0,     0,    0,   0 },  f_move,      { .m = m_bol } },
 { CONTROL('B'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar } },
 { META('b'),    { 0,     0,    0,   0 },  f_move,      { .m = m_prevword } },
@@ -91,7 +90,6 @@ static const Key stdkeys[] = {
 { CONTROL('D'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar } },
 { META('d'),    { t_sel, t_rw, 0,   0 },  f_pipe,      TOCLIP },
 { META('d'),    { 0,     0,    0,   0 },  f_select,    { .m = m_nextword } },
-{ CONTROL('E'), { t_eol, 0,    0,   0 },  f_move,      { .m = m_nextscr } },
 { CONTROL('E'), { 0,     0,    0,   0 },  f_move,      { .m = m_eol } },
 { CONTROL('F'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar } },
 { META('f'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextword } },
