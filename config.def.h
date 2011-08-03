@@ -35,10 +35,10 @@ static const char   nlstr[1]   = { 0 };
 
 /* Args to f_pipe / f_pipero */
 /* TODO: make sandy-sel to wrap xsel or standalone */
-#define TOCLIP   { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -ib || cat > ~/.sandy.clipboard" }
-#define FROMCLIP { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -ob || cat ~/.sandy.clipboard" }
-#define TOSEL    { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -i  || cat > ~/.sandy.selection" }
-#define FROMSEL  { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -o  || cat ~/.sandy.selection" }
+#define TOCLIP   { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -ib || cat > /tmp/.sandy.clipboard.$USER" }
+#define FROMCLIP { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -ob || cat /tmp/.sandy.clipboard.$USER" }
+#define TOSEL    { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -i  || cat > /tmp/.sandy.selection.$USER" }
+#define FROMSEL  { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -o  || cat /tmp/.sandy.selection.$USER" }
 
 /* Hooks are launched from the main code */
 #define HOOK_SAVE_NO_FILE f_spawn (&(const Arg)SAVEAS)
