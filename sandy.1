@@ -38,7 +38,8 @@ shells (specifically
 .IR mksh (1)),
 which actually differs a bit from what
 .IR emacs (1)
-does.  External input is handled using
+does.  Text is selected manually with the mouse or keyboard, or automtically
+when you search, pipe, undo or enter new text.  External input is handled using
 .IR dmenu (1)
 if the DISPLAY environment variable is set, read using
 .IR sh (1)
@@ -46,8 +47,13 @@ otherwise.  Similarly, X11 clipboard interaction occurs through
 .IR xsel (1)
 if DISPLAY is set, using a hidden file in the HOME directory otherwise.
 .SS Cursor movement
-Cursor movement bindings can also be used to select text by pressing Ctrl\-g to
-start a selection (see below)
+Cursor movement bindings are used to move the text insertion point and
+optionally to select text. Special keys (such as arrows, Home/End, Prev/Next)
+move the cursor and cancel any selection; they can be used to browse the text.
+Control keybindings extend or shrink the selection by moving the end at the
+insertion point; they are useful to perform minor changes without taking your
+fingers off the home row.  Remember to cancel the selection with Ctrl\-g
+before moving to select a new piece of text.
 .TP
 .BR Ctrl\-f " or " Right
 Move cursor to next char.
@@ -85,7 +91,7 @@ Move cursor to the beginning of the file.
 .BR Shift\-End
 Move cursor to the end of the file.
 .SS Finding and selecting
-Text is searched and selected using POSIX regular expressions
+Text is searched (and selected) using POSIX regular expressions
 .TP
 .B Ctrl\-s
 Prompt for a search regex forward or if there is a selection, repeat search
@@ -105,14 +111,12 @@ Repeat search backwards.
 Extend selection to word, line, or full file from current.
 .TP
 .B Ctrl\-g
-Cancel selection, or start selecting text manually.
+Cancel current selection.
 .TP
 .B Ctrl\-o
-Move to the opposite size of the selection, usually to extend it.
+Move to the opposite size of the selection, usually to modify it.
 .SS Deleting
-If any text is selected, any of these bindings deletes it and, unless Backspace
-or Delete, moves it to the clipboard.  Otherwise they behave as per this text.
-In read\-only mode, these bindings select text instead.
+TODO
 .TP
 .BR Ctrl\-d " or " Delete
 Delete next character.

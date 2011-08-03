@@ -119,12 +119,11 @@ enum { /* To use in statusflags */
 	S_InsEsc     = 1<<2,
 	S_CaseIns    = 1<<3,
 	S_Modified   = 1<<4,
-	S_Selecting  = 1<<5,
-	S_DirtyScr   = 1<<6,
-	S_DirtyDown  = 1<<7,
-	S_NeedResize = 1<<8,
-	S_Warned     = 1<<9,
-	S_GroupUndo  = 1<<10,
+	S_DirtyScr   = 1<<5,
+	S_DirtyDown  = 1<<6,
+	S_NeedResize = 1<<7,
+	S_Warned     = 1<<8,
+	S_GroupUndo  = 1<<9,
 };
 
 enum { /* To use in Undo.flags */
@@ -183,6 +182,7 @@ static void f_insert(const Arg*);
 static void f_line(const Arg*);
 static void f_mark(const Arg*);
 static void f_move(const Arg*);
+static void f_moveb(const Arg*);
 static void f_offset(const Arg*);
 static void f_pipe(const Arg*);
 static void f_pipelines(const Arg*);
@@ -203,7 +203,7 @@ static void           i_addundo(bool, Filepos, Filepos, char*);
 static void           i_advpos(Filepos *pos, int o);
 static void           i_calcvlen(Line *l);
 static void           i_cleanup(int);
-static void           i_deltext(Filepos, Filepos);
+static bool           i_deltext(Filepos, Filepos);
 static void           i_die(char *str);
 static void           i_dirtyrange(Line*, Line*);
 static bool           i_dotests(bool (*const a[])(void));
@@ -286,10 +286,9 @@ f_delete(const Arg *arg) {
 	i_sortpos(&pos0, &pos1);
 	s=i_gettext(pos0, pos1);
 	i_addundo(FALSE, pos0, pos1, s);
-	i_deltext(pos0, pos1);
-	fcur=fsel=pos0;
+	if(i_deltext(pos0, pos1)) fcur=pos0;
+	else fcur=fsel=pos0;
 	statusflags|=S_Modified;
-	statusflags&=~S_Selecting;
 	lastaction=LastDelete;
 }
 
@@ -310,14 +309,9 @@ f_extsel(const Arg *arg) {
 	break;
 	case ExtDefault:
 	default:
-		if(statusflags & S_Selecting) {
-			if(fsel.o == 0 && fcur.o == fcur.l->len) f_extsel(&(const Arg){.i = ExtAll});
-			else f_extsel(&(const Arg){.i = ExtLines});
-		} else {
-			if(!t_sel()) f_extsel(&(const Arg){.i = ExtWord});
-		}
+		if(fsel.o == 0 && fcur.o == fcur.l->len) f_extsel(&(const Arg){.i = ExtAll});
+		else f_extsel(&(const Arg){.i = ExtLines});
 	}
-	statusflags|=S_Selecting;
 }
 
 void /* Find arg->v regex backwards, same as last if arg->v == NULL */
@@ -332,21 +326,17 @@ f_findfw(const Arg *arg) {
 
 void /* Insert arg->v at cursor position, deleting the selection if any. Your responsibility: call only if t_rw() */
 f_insert(const Arg *arg) {
-	bool killsel;
+	Filepos newcur;
 
-	if((killsel=t_sel())) {
-		f_delete(&(const Arg) { .m = m_tosel });
-		undos->flags^=RedoMore;
+	newcur=i_addtext((char*)arg->v, fcur);
+	if((statusflags & S_GroupUndo) && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l))
+		i_addtoundo(newcur, arg->v);
+	else {
+		i_addundo(TRUE, fcur, newcur, strdup((char*)arg->v));
+		fsel=fcur;
 	}
-	fsel=i_addtext((char*)arg->v, fcur);
-	if((statusflags & S_GroupUndo) && !killsel && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l)) {
-		i_addtoundo(fsel, arg->v);
-	} else
-		i_addundo(TRUE, fcur, fsel, strdup((char*)arg->v));
-	if(killsel) undos->flags^=UndoMore;
-	fcur=fsel;
+	fcur=newcur;
 	statusflags|=(S_Modified|S_GroupUndo);
-	statusflags&=~S_Selecting;
 	lastaction=LastInsert;
 }
 
@@ -358,7 +348,6 @@ f_line(const Arg *arg) {
 	fcur.l=i_lineat(l);
 	if(fcur.o>fcur.l->len) fcur.o=fcur.l->len;
 	FIXNEXT(fcur);
-	if(! (statusflags & S_Selecting)) fsel=fcur;
 }
 
 void /* Set mark at current position */
@@ -366,10 +355,14 @@ f_mark(const Arg *arg) {
 	fmrk=fcur;
 }
 
-void /* Move cursor or extend/shrink selection as per arg->m */
+void /* Move cursor and extend/shrink selection as per arg->m */
 f_move(const Arg *arg) {
 	fcur=arg->m(fcur);
-	if(! (statusflags & S_Selecting)) fsel=fcur;
+}
+
+void /* Move cursor as per arg->m, then copy at selection */
+f_moveb(const Arg *arg) {
+	fsel=fcur=arg->m(fcur);
 }
 
 void /* Got to atoi(arg->v) position in the current line */
@@ -377,7 +370,6 @@ f_offset(const Arg *arg) {
 	fcur.o=atoi(arg->v);
 	if(fcur.o>fcur.l->len) fcur.o=fcur.l->len;
 	FIXNEXT(fcur);
-	if(! (statusflags & S_Selecting)) fsel=fcur;
 }
 
 void /* Pipe selection through arg->v external command. Your responsibility: call only if t_rw() */
@@ -401,13 +393,15 @@ f_pipero(const Arg *arg) {
 
 	statusflags|=S_Readonly;
 	i_pipetext(arg->v);
-	statusflags=oldsf&(~S_Selecting);
+	statusflags=oldsf;
 	lastaction=LastPipeRO;
 }
 
 void /* Repeat the last action. Your responsibility: call only if t_rw() */
 f_repeat(const Arg *arg) {
 	Filepos pos;
+	bool was_sel;
+
 	i_sortpos(&fsel, &fcur);
 	switch(lastaction) {
 	case LastDelete:
@@ -415,8 +409,13 @@ f_repeat(const Arg *arg) {
 	break;
 	case LastInsert:
 		if(undos && undos->flags & UndoIns) {
+			if((was_sel=t_sel())) { /* Convenience: delete selection before repeating insertion */
+				f_delete(&(const Arg) { .m = m_tosel });
+				undos->flags^=RedoMore;
+			}
 			pos=fsel;
-			f_insert(&(const Arg){ .v = undos->str });
+			f_insert(&(const Arg){ .v = (was_sel?undos->prev:undos)->str });
+			if(was_sel) undos->flags^=UndoMore;
 			fsel=pos;
 		}
 	break;
@@ -427,14 +426,12 @@ f_repeat(const Arg *arg) {
 		f_pipero(&(const Arg) { .v = getenv(envs[EnvPipe]) });
 	break;
 	}
-	statusflags&=~S_Selecting;
 }
 
 void /* Save file with arg->v filename, same if NULL. Your responsibility: call only if t_mod() */
 f_save(const Arg *arg) {
 	Undo *u;
 
-	statusflags&=~S_Selecting;
 	if(arg && arg->v && *((char*)arg->v)) {
 		free(filename);
 		filename=strdup((char*)arg->v);
@@ -453,22 +450,17 @@ f_save(const Arg *arg) {
 	}
 }
 
-void /* Move cursor as per arg->m, without moving the selection point */
+void /* Move cursor as per arg->m, then move the selection point to previous cursor */
 f_select(const Arg *arg) {
-	Filepos tmppos=fcur; /* for f_select(m_tosel) */
+	Filepos tmppos=fcur; /* for f_select(m_tosel), which reverses the selection */
 
 	fcur=arg->m(fcur);
 	fsel=tmppos;
-	if(t_sel())
-		statusflags|=S_Selecting;
-	else
-		statusflags&=~S_Selecting;
 }
 
 void /* Spawn (char **)arg->v */
 f_spawn(const Arg *arg) {
 	int pid=-1;
-	statusflags&=~S_Selecting;
 	reset_shell_mode();
 	if((pid=fork()) == 0) {
 		setsid();
@@ -493,7 +485,7 @@ void /* Set syntax with name arg->v */
 f_syntax(const Arg *arg) {
 	int i, j;
 
-	statusflags=(statusflags|S_DirtyScr)&~S_Selecting;
+	statusflags|=S_DirtyScr;
 	for(i=0; i<LENGTH(syntaxes); i++)
 		if((arg && arg->v) ? !strcmp(arg->v, syntaxes[i].name)
 				   : !regexec(syntax_file_res[i], filename, 1, NULL, 0)) {
@@ -533,7 +525,6 @@ f_undo(const Arg *arg) {
 	Undo *u;
 	int   n;
 
-	statusflags&=~S_Selecting;
 	u=(isredo?redos:undos);
 	fsel.o=u->starto, fsel.l=i_lineat(u->startl);
 	fcur=fsel;
@@ -701,11 +692,13 @@ i_dirtyrange(Line *l0, Line *l1) {
 	for(; pos0.l && pos0.l != pos1.l->next; pos0.l=pos0.l->next) pos0.l->dirty=TRUE;
 }
 
-void /* Delete text between pos0 and pos1, which MUST be in order, fcur and fsel integrity is NOT assured after deletion */
+bool /* Delete text between pos0 and pos1, which MUST be in order, fcur integrity is NOT assured after deletion, fsel integrity is returned as a bool */
 i_deltext(Filepos pos0, Filepos pos1) {
 	Line *ldel=NULL;
 	size_t vlines=1;
+	bool integrity=TRUE;
 
+	if(pos0.l==fsel.l) integrity=(fsel.o<=pos0.o || (pos0.l==pos1.l && fsel.o>pos1.o));
 	if(pos0.l==pos1.l) {
 		vlines=VLINES(pos0.l);
 		memmove(pos0.l->c+pos0.o, pos0.l->c+pos1.o, (pos0.l->len - pos1.o));
@@ -724,11 +717,13 @@ i_deltext(Filepos pos0, Filepos pos1) {
 			pos0.l->next=pos0.l->next->next;
 			if(scrline == ldel) scrline=ldel->prev;
 			if(lstline == ldel) lstline=ldel->prev;
+			if(fsel.l  == ldel) integrity=FALSE;
 			free(ldel->c);
 			free(ldel);
 		}
 	}
 	if(ldel!=NULL || vlines != VLINES(pos0.l)) statusflags|=S_DirtyDown;
+	return integrity;
 }
 
 bool /* test an array of t_ functions */
@@ -755,7 +750,7 @@ i_edit(void) {
 		if(fsel.l != oldsel.l) i_dirtyrange(oldsel.l, fsel.l);
 		else if(fsel.o != oldsel.o) fsel.l->dirty=TRUE;
 		if(fcur.l != oldcur.l) i_dirtyrange(oldcur.l, fcur.l);
-		else if(fcur.o != oldcur.o && t_sel()) fcur.l->dirty=TRUE;
+		else if(fcur.o != oldcur.o) fcur.l->dirty=TRUE;
 		oldsel=fsel, oldcur=fcur;
 		i_update();
 
@@ -942,7 +937,6 @@ i_pipetext(const char *cmd) {
 	Filepos auxp;
 	fd_set fdI, fdO;
 
-	statusflags&=~S_Selecting;
 	if(!cmd || cmd[0] == '\0') return;
 	setenv(envs[EnvPipe], cmd, 1);
 	if (pipe(pin) == -1) return;
@@ -1138,7 +1132,6 @@ i_scrtofpos(int x, int y) {
 
 bool /* Update find_res[sel_re] and sel_re. Return TRUE if find term is a valid RE or NULL */
 i_setfindterm(char *find_term) {
-	statusflags&=~S_Selecting;
 	if(find_term) { /* Modify find term; use NULL to repeat search */
 		if(!regcomp(find_res[sel_re^1], find_term, REG_EXTENDED|REG_NEWLINE|(statusflags&S_CaseIns?REG_ICASE:0))) {
 			sel_re^=1;
@@ -1415,13 +1408,12 @@ i_update(void) {
 	else {
 		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
-		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
+		snprintf(title, BUFSIZ, "%s [%s]%s%s%s %ld,%d  %s",
 			(filename == NULL?"<No file>":filename),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
 			(t_mod()?"[+]":""),
 			(!t_rw()?"[RO]":""),
 			(statusflags&S_CaseIns?"[icase]":""),
-			(statusflags&S_Selecting?"[SEL]":""),
 			ncur, (int)fcur.o,
 			(scrline==fstline?
 				(nlst<lines3?"All":"Top"):
