@@ -399,25 +399,14 @@ f_pipero(const Arg *arg) {
 
 void /* Repeat the last action. Your responsibility: call only if t_rw() */
 f_repeat(const Arg *arg) {
-	Filepos pos;
-	bool was_sel;
-
 	i_sortpos(&fsel, &fcur);
 	switch(lastaction) {
 	case LastDelete:
 		if(t_sel()) f_delete(&(const Arg){ .m = m_tosel });
 	break;
 	case LastInsert:
-		if(undos && undos->flags & UndoIns) {
-			if((was_sel=t_sel())) { /* Convenience: delete selection before repeating insertion */
-				f_delete(&(const Arg) { .m = m_tosel });
-				undos->flags^=RedoMore;
-			}
-			pos=fsel;
-			f_insert(&(const Arg){ .v = (was_sel?undos->prev:undos)->str });
-			if(was_sel) undos->flags^=UndoMore;
-			fsel=pos;
-		}
+		if(undos && undos->flags & UndoIns)
+			f_insert(&(const Arg){ .v = undos->str });
 	break;
 	case LastPipe:
 		f_pipe(&(const Arg) { .v = getenv(envs[EnvPipe]) });
