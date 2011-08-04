@@ -92,7 +92,6 @@ static const Key stdkeys[] = {
 { .keyv.c = META('f'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextword } },
 { .keyv.c = CONTROL('G'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_stay } },
 { .keyv.c = CONTROL('H'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
-{ .keyv.c = CONTROL('I'), { t_sel, t_rw, 0,   0 },  f_pipelines, { .v = "sed 's/^/\\t/'" } },
 { .keyv.c = CONTROL('I'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\t" } },
 { .keyv.c = CONTROL('J'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = CONTROL('J'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
@@ -130,6 +129,8 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('^'), { t_rw,  0,    0,   0 },  f_repeat,    { 0 } },
 { .keyv.c = CONTROL('_'), { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1 } },
 { .keyv.c = CONTROL('?'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
+{ .keyv.c = META(','),    { 0,     0,    0,   0 },  f_move,      { .m = m_bof } },
+{ .keyv.c = META('.'),    { 0,     0,    0,   0 },  f_move,      { .m = m_eof } },
 };
 
 /* Commands read at the fifo */
