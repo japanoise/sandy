@@ -77,6 +77,8 @@ static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 static const Key stdkeys[] = {
 /* keyv.c,                test,                     func,        arg */
 { .keyv.c = CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
+{ .keyv.c = META(' '),    { 0,     0,    0,   0 },  f_mark,      { 0 } },
+{ .keyv.c = META('`'),    { 0,     0,    0,   0 },  f_mark,      { 0 } },
 { .keyv.c = CONTROL('A'), { 0,     0,    0,   0 },  f_move,      { .m = m_bol } },
 { .keyv.c = CONTROL('B'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar } },
 { .keyv.c = META('b'),    { 0,     0,    0,   0 },  f_move,      { .m = m_prevword } },
