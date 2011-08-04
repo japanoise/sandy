@@ -122,9 +122,10 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword } },
 { .keyv.c = CONTROL('X'), { t_mod, 0,    0,   0 },  f_save,      { 0 } },
 { .keyv.c = CONTROL('X'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
+{ .keyv.c = META('x'),    { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 { .keyv.c = CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipe,      FROMCLIP },
 { .keyv.c = CONTROL('Z'), { 0     ,0,    0,   0 },  f_suspend,   { 0 } },
-{ .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  f_spawn,     CMD_P },  /* TODO: Sam's? */
+{ .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 { .keyv.c = CONTROL('\\'),{ 0,     0,    0,   0 },  f_spawn,     PIPE },
 { .keyv.c = CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault } },
 { .keyv.c = CONTROL('^'), { t_redo,t_rw, 0,   0 },  f_undo,      { .i = -1 } },
