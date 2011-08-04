@@ -1112,7 +1112,7 @@ i_scrtofpos(int x, int y) {
 				pos.l=l;
 				pos.o=0;
 				while(x>(ivchar%cols) || (ivchar/cols)<ixrow) {
-					ivchar+=VLEN(l->c[pos.o], ivchar%(cols-1));
+					ivchar+=VLEN(l->c[pos.o], ivchar);
 					pos.o++;
 				}
 				if(pos.o>pos.l->len) pos.o=pos.l->len;
@@ -1348,7 +1348,7 @@ i_update(void) {
 					if(l && ichar<l->len) {
 						if(l->c[ichar] == 0x09) { /* Tab nightmare */
 							wattrset(textwin, textattrs[SpcFG][ibg]);
-							for(i=0; i<VLEN(0x09, ivchar%(cols-1)); i++) waddstr(textwin, ((i==0 && isutf8)?tabstr:" "));
+							for(i=0; i<VLEN(0x09, ivchar); i++) waddstr(textwin, ((i==0 && isutf8)?tabstr:" "));
 						} else if(l->c[ichar] == ' ') { /* Space */
 							wattrset(textwin, textattrs[SpcFG][ibg]);
 							waddstr(textwin, (isutf8?spcstr:" "));
@@ -1364,7 +1364,7 @@ i_update(void) {
 						} else {
 							waddch(textwin, l->c[ichar]);
 						}
-						ivchar+=VLEN(l->c[ichar], ivchar%(cols-1));
+						ivchar+=VLEN(l->c[ichar], ivchar);
 						if(isutf8 && !ISASCII(l->c[ichar]) && i) ichar+=i; /* ...here */
 						else ichar++;
 					} else {
@@ -1546,11 +1546,11 @@ m_nextline(Filepos pos) {
 	int ivchar, ichar;
 
 	for(ivchar=ichar=0; ichar < pos.o;ichar++)
-		ivchar+=VLEN(pos.l->c[ichar], (ivchar%(cols-1)));
+		ivchar+=VLEN(pos.l->c[ichar], ivchar);
 
 	if(pos.l->next){
 		for(pos.l=pos.l->next, pos.o=ichar=0; ichar<ivchar && pos.o < pos.l->len; pos.o++)
-			ichar+=VLEN(pos.l->c[pos.o], ichar);
+			ichar+=VLEN(pos.l->c[pos.o], ichar); /* Remember: here we re-use ichar as a second ivchar */
 		FIXNEXT(pos);
 	} else pos.o=pos.l->len;
 	return pos;
@@ -1565,7 +1565,7 @@ m_prevline(Filepos pos) {
 
 	if(pos.l->prev){
 		for(pos.l=pos.l->prev, pos.o=ichar=0; ichar<ivchar && pos.o < pos.l->len; pos.o++)
-			ichar+=VLEN(pos.l->c[pos.o], ichar);
+			ichar+=VLEN(pos.l->c[pos.o], ichar); /* Remember: here we re-use ichar as a second ivchar */
 		FIXNEXT(pos);
 	} else pos.o=0;
 	return pos;
