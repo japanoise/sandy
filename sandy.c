@@ -70,7 +70,10 @@ typedef union { /** An argument to a f_* function, generic */
 } Arg;
 
 typedef struct {                      /** A keybinding */
-	int  keyv[6];                 /* Keyv to press */
+	union {
+		char c[6];            /* Standard chars */
+		int  i;               /* NCurses code */
+	} keyv;
 	bool (*test[4])(void);        /* Conditions to match */
 	void (*func)(const Arg *arg); /* Function to perform */
 	const Arg arg;                /* Argument to func() */
@@ -727,7 +730,7 @@ i_dotests(bool (*const a[])(void)) {
 void /* Main editing loop */
 i_edit(void) {
 	int ch, i;
-	int c[7];
+	char c[7];
 	fd_set fds;
 	Filepos oldsel, oldcur;
 
@@ -769,7 +772,7 @@ i_edit(void) {
 			if(ch==KEY_MOUSE) {
 				i_mouse();
 			} else for(i=0; i<LENGTH(curskeys); i++) {
-				if(memcmp(&ch, curskeys[i].keyv, sizeof ch) == 0 && i_dotests(curskeys[i].test) ) {
+				if(ch == curskeys[i].keyv.i && i_dotests(curskeys[i].test) ) {
 					if(curskeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					curskeys[i].func(&(curskeys[i].arg));
 					break;
@@ -793,7 +796,7 @@ i_edit(void) {
 
 		if(!(statusflags&S_InsEsc) && ISCTRL(c[0])) {
 			for(i=0; i<LENGTH(stdkeys); i++) {
-				if(memcmp(c, stdkeys[i].keyv, sizeof stdkeys[i].keyv) == 0 && i_dotests(stdkeys[i].test) ) {
+				if(memcmp(c, stdkeys[i].keyv.c, sizeof stdkeys[i].keyv.c) == 0 && i_dotests(stdkeys[i].test) ) {
 					if(stdkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					stdkeys[i].func(&(stdkeys[i].arg));
 					break;

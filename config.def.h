@@ -52,26 +52,26 @@ static const char   nlstr[1]   = { 0 };
 #define CONTROL(ch)   {(ch ^ 0x40)}
 #define META(ch)      {0x1B, ch}
 
-static const Key curskeys[] = { /* Don't use CONTROL or META here */
-/* keyv,            tests,                     func,      arg */
-{ {KEY_BACKSPACE},  { t_rw,  0,    0,   0 },   f_delete,  { .m = m_prevchar } },
-{ {KEY_DC},         { t_sel, t_rw, 0,   0 },   f_delete,  { .m = m_tosel    } },
-{ {KEY_DC},         { t_rw,  0,    0,   0 },   f_delete,  { .m = m_nextchar } },
-{ {KEY_IC},         { t_sel, 0,    0,   0 },   f_pipero,  TOCLIP },
-{ {KEY_SDC},        { t_sel, t_rw, 0,   0 },   f_pipe,    TOCLIP },
-{ {KEY_SIC},        { t_rw,  0,    0,   0 },   f_pipe,    FROMCLIP },
-{ {KEY_HOME},       { 0,     0,    0,   0 },   f_moveb,   { .m = m_bol      } },
-{ {KEY_END},        { 0,     0,    0,   0 },   f_moveb,   { .m = m_eol      } },
-{ {KEY_SHOME},      { 0,     0,    0,   0 },   f_moveb,   { .m = m_bof      } },
-{ {KEY_SEND},       { 0,     0,    0,   0 },   f_moveb,   { .m = m_eof      } },
-{ {KEY_PPAGE},      { 0,     0,    0,   0 },   f_moveb,   { .m = m_prevscr  } },
-{ {KEY_NPAGE},      { 0,     0,    0,   0 },   f_moveb,   { .m = m_nextscr  } },
-{ {KEY_UP},         { 0,     0,    0,   0 },   f_moveb,   { .m = m_prevline } },
-{ {KEY_DOWN},       { 0,     0,    0,   0 },   f_moveb,   { .m = m_nextline } },
-{ {KEY_LEFT},       { 0,     0,    0,   0 },   f_moveb,   { .m = m_prevchar } },
-{ {KEY_RIGHT},      { 0,     0,    0,   0 },   f_moveb,   { .m = m_nextchar } },
-{ {KEY_SLEFT},      { 0,     0,    0,   0 },   f_moveb,   { .m = m_prevword } },
-{ {KEY_SRIGHT},     { 0,     0,    0,   0 },   f_moveb,   { .m = m_nextword } },
+static const NCKey curskeys[] = { /* Plain keys here, no CONTROL or META */
+/* keyv,          tests,                     func,      arg */
+{ KEY_BACKSPACE,  { t_rw,  0,    0,   0 },   f_delete,  { .m = m_prevchar } },
+{ KEY_DC,         { t_sel, t_rw, 0,   0 },   f_delete,  { .m = m_tosel    } },
+{ KEY_DC,         { t_rw,  0,    0,   0 },   f_delete,  { .m = m_nextchar } },
+{ KEY_IC,         { t_sel, 0,    0,   0 },   f_pipero,  TOCLIP },
+{ KEY_SDC,        { t_sel, t_rw, 0,   0 },   f_pipe,    TOCLIP },
+{ KEY_SIC,        { t_rw,  0,    0,   0 },   f_pipe,    FROMCLIP },
+{ KEY_HOME,       { 0,     0,    0,   0 },   f_moveb,   { .m = m_bol      } },
+{ KEY_END,        { 0,     0,    0,   0 },   f_moveb,   { .m = m_eol      } },
+{ KEY_SHOME,      { 0,     0,    0,   0 },   f_moveb,   { .m = m_bof      } },
+{ KEY_SEND,       { 0,     0,    0,   0 },   f_moveb,   { .m = m_eof      } },
+{ KEY_PPAGE,      { 0,     0,    0,   0 },   f_moveb,   { .m = m_prevscr  } },
+{ KEY_NPAGE,      { 0,     0,    0,   0 },   f_moveb,   { .m = m_nextscr  } },
+{ KEY_UP,         { 0,     0,    0,   0 },   f_moveb,   { .m = m_prevline } },
+{ KEY_DOWN,       { 0,     0,    0,   0 },   f_moveb,   { .m = m_nextline } },
+{ KEY_LEFT,       { 0,     0,    0,   0 },   f_moveb,   { .m = m_prevchar } },
+{ KEY_RIGHT,      { 0,     0,    0,   0 },   f_moveb,   { .m = m_nextchar } },
+{ KEY_SLEFT,      { 0,     0,    0,   0 },   f_moveb,   { .m = m_prevword } },
+{ KEY_SRIGHT,     { 0,     0,    0,   0 },   f_moveb,   { .m = m_nextword } },
 };
 
 static const Key stdkeys[] = {
