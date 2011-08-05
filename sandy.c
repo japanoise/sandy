@@ -332,11 +332,11 @@ f_insert(const Arg *arg) {
 	Filepos newcur;
 
 	newcur=i_addtext((char*)arg->v, fcur);
-	if((statusflags & S_GroupUndo) && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l))
+	if((statusflags & S_GroupUndo) && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l) && ((char*)arg->v)[0] != '\n')
 		i_addtoundo(newcur, arg->v);
 	else {
 		i_addundo(TRUE, fcur, newcur, strdup((char*)arg->v));
-		fsel=fcur;
+		fsel=(fcur.l == newcur.l ? fcur : newcur);
 	}
 	fcur=newcur;
 	statusflags|=(S_Modified|S_GroupUndo);
