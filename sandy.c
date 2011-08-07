@@ -1275,31 +1275,35 @@ i_update(void) {
 		if(l==fcur.l) { /* Can't have fcur.l before scrline, move scrline up */
 			i=0;
 			while(l!=scrline) {
-				if(VLINES(scrline) > 1 || ++i > LINES2) { /* Scrolled by a picky line or through the whole view, skip */
-					statusflags|=S_DirtyScr;
-					scrline=l;
+				if(VLINES(scrline) > 1) {
+					i=-1;
 					break;
 				}
-				wscrl(textwin, -1); /* We now know that VLINES(scrline) is 1, optimize */
+				i++;
 				scrline=scrline->prev;
 			}
+			if(i<0 || i>LINES2) { 
+				scrline=l;
+				statusflags|=S_DirtyScr;
+			} else
+				wscrl(textwin, -i);
 			break;
 		}
 		if(l==fsel.l) /* Selection starts before screen view */
 			selection=!selection;
 	}
 	for(i=irow=0, l=scrline; l; l=l->next, irow+=vlines) {
-		if((vlines=VLINES(l)) > 1) i=1; /* i=1 if any line before fcur.l has vlines>1*/
+		if((vlines=VLINES(l)) > 1) statusflags|=S_DirtyDown; /* if any line before fcur.l has vlines>1 */
 		if(fcur.l==l) {
 			if(irow+vlines>2*LINES2) statusflags|=S_DirtyScr;
 			while(irow+vlines>LINES2 && scrline->next) { /* Can't have fcur.l after screen end, move scrline down */
-				if(!(statusflags&S_DirtyScr)) wscrl(textwin, VLINES(scrline));
-				if(i) statusflags|=S_DirtyDown; /* lines with vlines>1 require this. */
 				irow -= VLINES(scrline);
+				i    += VLINES(scrline);
 				if(scrline==fsel.l) selection=!selection; /* We just scrolled past the selection point */
 				scrline=scrline->next;
 				iline++;
 			}
+			if(!(statusflags&S_DirtyScr)) wscrl(textwin, i);
 			break;
 		}
 	}
