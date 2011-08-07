@@ -110,7 +110,7 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('N'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 { .keyv.c = CONTROL('O'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_tosel } }, /* Swap fsel and fcur */
 { .keyv.c = CONTROL('P'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevline } },
-{ .keyv.c = CONTROL('Q'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_InsEsc } },
+{ .keyv.c = CONTROL('Q'), { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_InsEsc } },
 { .keyv.c = CONTROL('R'), { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
 { .keyv.c = CONTROL('R'), { 0,     0,    0,   0 },  f_spawn,     FINDBW },
 { .keyv.c = META('r'),    { 0,     0,    0,   0 },  f_findbw,    { 0 } },
@@ -124,7 +124,7 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('V'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevscr } },
 { .keyv.c = META('v'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextscr } },
 { .keyv.c = CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword } },
-{ .keyv.c = CONTROL('X'), { t_mod, 0,    0,   0 },  f_save,      { 0 } },
+{ .keyv.c = CONTROL('X'), { t_mod, t_rw, 0,   0 },  f_save,      { 0 } },
 { .keyv.c = CONTROL('X'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
 { .keyv.c = META('x'),    { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 { .keyv.c = CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipe,      FROMCLIP },
@@ -145,20 +145,20 @@ static const Key stdkeys[] = {
 
 /* Commands read at the fifo */
 static const Command cmds[] = { /* if(arg == 0) arg.v=regex_match */
-/* regex,           tests,        func      arg */
-{"^([0-9]+)$",      { 0,     0 }, f_line ,  { 0 } },
-{"^/(.*)$",         { 0,     0 }, f_findfw, { 0 } },
-{"^\\?(.*)$",       { 0,     0 }, f_findbw, { 0 } },
-{"^![ \t]*(.*)$",   { t_rw,  0 }, f_pipe,   { 0 } },
-{"^![ /t]*(.*)$",   { 0,     0 }, f_pipero, { 0 } },
-{"^w[ \t]*(.*)$",   { 0,     0 }, f_save,   { 0 } },
-{"^syntax (.*)$",   { 0,     0 }, f_syntax, { 0 } },
-{"^offset (.*)$",   { 0,     0 }, f_offset, { 0 } },
-{"^set icase$",     { 0,     0 }, f_toggle, { .i = S_CaseIns } },
-{"^set ro$",        { 0,     0 }, f_toggle, { .i = S_Readonly } },
-{"^q$",             { t_mod, 0 }, f_toggle, { .i = S_Warned } },
-{"^q$",             { 0,     0 }, f_toggle, { .i = S_Running } },
-{"^q!$",            { 0,     0 }, f_toggle, { .i = S_Running } },
+/* regex,           tests,              func      arg */
+{"^([0-9]+)$",      { 0,     0,    0 }, f_line ,  { 0 } },
+{"^/(.*)$",         { 0,     0,    0 }, f_findfw, { 0 } },
+{"^\\?(.*)$",       { 0,     0,    0 }, f_findbw, { 0 } },
+{"^![ \t]*(.*)$",   { t_rw,  0,    0 }, f_pipe,   { 0 } },
+{"^![ /t]*(.*)$",   { 0,     0,    0 }, f_pipero, { 0 } },
+{"^w[ \t]*(.*)$",   { t_mod, t_rw, 0 }, f_save,   { 0 } },
+{"^syntax (.*)$",   { 0,     0,    0 }, f_syntax, { 0 } },
+{"^offset (.*)$",   { 0,     0,    0 }, f_offset, { 0 } },
+{"^set icase$",     { 0,     0,    0 }, f_toggle, { .i = S_CaseIns } },
+{"^set ro$",        { 0,     0,    0 }, f_toggle, { .i = S_Readonly } },
+{"^q$",             { t_mod, 0,    0 }, f_toggle, { .i = S_Warned } },
+{"^q$",             { 0,     0,    0 }, f_toggle, { .i = S_Running } },
+{"^q!$",            { 0,     0,    0 }, f_toggle, { .i = S_Running } },
 };
 
 /* Syntax color definition */

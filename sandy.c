@@ -74,14 +74,14 @@ typedef struct {                      /** A keybinding */
 		char c[6];            /* Standard chars */
 		int  i;               /* NCurses code */
 	} keyv;
-	bool (*test[4])(void);        /* Conditions to match */
+	bool (*test[4])(void);        /* Conditions to match, make sure the last one is 0x00 */
 	void (*func)(const Arg *arg); /* Function to perform */
 	const Arg arg;                /* Argument to func() */
 } Key;
 
 typedef struct {                      /** A command read at the fifo */
 	const char *re_text;          /* A regex to match the command, must have a parentheses group for argument */
-	bool (*test[2])(void);        /* Conditions to match */
+	bool (*test[3])(void);        /* Conditions to match, make sure the last one is 0x00 */
 	void (*func)(const Arg *arg); /* Function to perform, argument is determined as arg->v from regex above */
 	const Arg arg;                /* Argument to func() */
 } Command;
@@ -420,7 +420,7 @@ f_repeat(const Arg *arg) {
 	}
 }
 
-void /* Save file with arg->v filename, same if NULL. Your responsibility: call only if t_mod() */
+void /* Save file with arg->v filename, same if NULL. Your responsibility: call only if t_mod() && t_rw() */
 f_save(const Arg *arg) {
 	Undo *u;
 
@@ -720,11 +720,12 @@ i_deltext(Filepos pos0, Filepos pos1) {
 
 bool /* test an array of t_ functions */
 i_dotests(bool (*const a[])(void)) {
-	int i;
+	int i=0;
 
-	for(i=0; i<LENGTH(a); i++)
-		if(a[i] && !(a[i]())) return FALSE;
-	return TRUE;
+	while(1) /* Somehow LENGTH() did not work here */
+		if(a[i]) {
+			if(!a[i++]()) return FALSE;
+		} else return TRUE;
 }
 
 void /* Main editing loop */
