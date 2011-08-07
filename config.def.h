@@ -27,11 +27,13 @@ static const char   nlstr[1]   = { 0 };
 	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \" >&2; read arg; fi &&" \
 	"echo " cmd "\"$arg\" > ${SANDY_FIFO}", NULL } }
 
-#define FIND   PROMPT("Find:",        "${SANDY_FIND}",   "/")
-#define FINDBW PROMPT("Find (back):", "${SANDY_FIND}",   "?")
-#define PIPE   PROMPT("Pipe:",        "${SANDY_PIPE}",   "!")
-#define SAVEAS PROMPT("Save as:",     "${SANDY_FILE}",   "w")
-#define CMD_P  PROMPT("Command:",     "/\n?\nw\n!\nsyntax\noffset", "")
+#define FIND    PROMPT("Find:",        "${SANDY_FIND}",   "/")
+#define FINDBW  PROMPT("Find (back):", "${SANDY_FIND}",   "?")
+#define PIPE    PROMPT("Pipe:",        "${SANDY_PIPE}",   "!")
+#define SAVEAS  PROMPT("Save as:",     "${SANDY_FILE}",   "w")
+#define REPLACE PROMPT("Replace:",     "",                "!echo 2>/dev/null -n ")
+#define SED     PROMPT("Sed:",         "",                "!sed 2>/dev/null ")
+#define CMD_P   PROMPT("Command:",     "/\n?\nw\n!\nsyntax\noffset", "")
 
 /* Args to f_pipe / f_pipero */
 /* TODO: make sandy-sel to wrap xsel or standalone */
@@ -55,10 +57,11 @@ static const char   nlstr[1]   = { 0 };
 static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 /* keyv.i,                  tests,                     func,      arg */
 { .keyv.i = KEY_BACKSPACE,  { t_rw,  0,    0,   0 },   f_delete,  { .m = m_prevchar } },
-{ .keyv.i = KEY_DC,         { t_sel, t_rw, 0,   0 },   f_delete,  { .m = m_tosel    } },
+{ .keyv.i = KEY_DC,         { t_sel, t_rw, 0,   0 },   f_pipe,    TOCLIP },
 { .keyv.i = KEY_DC,         { t_rw,  0,    0,   0 },   f_delete,  { .m = m_nextchar } },
 { .keyv.i = KEY_IC,         { t_sel, 0,    0,   0 },   f_pipero,  TOCLIP },
-{ .keyv.i = KEY_SDC,        { t_sel, t_rw, 0,   0 },   f_pipe,    TOCLIP },
+{ .keyv.i = KEY_SDC,        { t_sel, t_rw, 0,   0 },   f_delete,  { .m = m_tosel } },
+{ .keyv.i = KEY_SDC,        { t_rw,  0,    0,   0 },   f_delete,  { .m = m_prevchar } },
 { .keyv.i = KEY_SIC,        { t_rw,  0,    0,   0 },   f_pipe,    FROMCLIP },
 { .keyv.i = KEY_HOME,       { 0,     0,    0,   0 },   f_moveb,   { .m = m_bol      } },
 { .keyv.i = KEY_END,        { 0,     0,    0,   0 },   f_moveb,   { .m = m_eol      } },
@@ -93,6 +96,7 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('F'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar } },
 { .keyv.c = META('f'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextword } },
 { .keyv.c = CONTROL('G'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_stay } },
+{ .keyv.c = CONTROL('H'), { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel } },
 { .keyv.c = CONTROL('H'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
 { .keyv.c = CONTROL('I'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\t" } },
 { .keyv.c = CONTROL('J'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
@@ -126,10 +130,13 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipe,      FROMCLIP },
 { .keyv.c = CONTROL('Z'), { 0     ,0,    0,   0 },  f_suspend,   { 0 } },
 { .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  f_spawn,     CMD_P },
-{ .keyv.c = CONTROL('\\'),{ 0,     0,    0,   0 },  f_spawn,     PIPE },
+{ .keyv.c = CONTROL('\\'),{ t_rw,  0,    0,   0 },  f_spawn,     PIPE },
+{ .keyv.c = META('\\'),   { t_rw,  0,    0,   0 },  f_spawn,     SED },
 { .keyv.c = CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault } },
 { .keyv.c = CONTROL('^'), { t_redo,t_rw, 0,   0 },  f_undo,      { .i = -1 } },
 { .keyv.c = CONTROL('^'), { t_rw,  0,    0,   0 },  f_repeat,    { 0 } },
+{ .keyv.c = META('6'),    { t_rw,  0,    0,   0 },  f_pipelines, { .v = "tr -d '\n'" } },
+{ .keyv.c = META('5'),    { t_sel, t_rw, 0,   0 },  f_spawn,     REPLACE },
 { .keyv.c = CONTROL('_'), { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1 } },
 { .keyv.c = CONTROL('?'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
 { .keyv.c = META(','),    { 0,     0,    0,   0 },  f_move,      { .m = m_bof } },

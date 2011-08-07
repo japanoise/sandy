@@ -127,12 +127,13 @@ Move to the opposite size of the selection, usually to modify it.
 .SS Deleting
 Unlike in most other text editors, inserting text while a selection is active does not delete its content.
 .TP
-.BR Ctrl\-d " or " Delete " or " Shift\-Delete
-Delete ithe current selection if any or the character under the cursor
-otherwise.  Ctrl\-d and Shift\-Delete put the selection in the clipboard while
-Dlete just kills it.
+.BR Ctrl\-d " or " Delete
+Kill the current selection and put it in the clipboard. If there is no selection, delete next character.
 .TP
-.BR Ctrl\-h " or " Backspace
+.BR Ctrl\-h " or " Shift\-Delete
+Delete the current selection if any. Otherwise delete previous character.
+.TP
+.BR Backspace
 Delete previous character.
 .TP
 .B Ctrl\-u
@@ -158,6 +159,15 @@ These operations affect the selected text if any.
 .TP
 .B Ctrl\-\e
 Prompt for a command to pipe text through.
+.TP
+.B Meta\-\e
+Prompt for a sed command to pipe text through.
+.TP
+.B Meta\-5
+Prompt for a literal string to replace the text.
+.TP
+.B Meta\-6
+Delete newline characters, joining lines.
 .TP
 .B Meta\-c
 Capitalize selection.
