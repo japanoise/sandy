@@ -127,6 +127,7 @@ enum { /* To use in statusflags */
 	S_NeedResize = 1<<7,
 	S_Warned     = 1<<8,
 	S_GroupUndo  = 1<<9,
+	S_AutoIndent = 1<<10,
 };
 
 enum { /* To use in Undo.flags */
@@ -185,10 +186,8 @@ static void f_insert(const Arg*);
 static void f_line(const Arg*);
 static void f_mark(const Arg*);
 static void f_move(const Arg*);
-static void f_moveb(const Arg*);
 static void f_offset(const Arg*);
 static void f_pipe(const Arg*);
-static void f_pipelines(const Arg*);
 static void f_pipero(const Arg*);
 static void f_repeat(const Arg*);
 static void f_save(const Arg*);
@@ -233,6 +232,7 @@ static void           i_usage(void);
 static bool           i_writefile(char*);
 
 /* t_* functions to know whether to process an action or keybinding */
+static bool t_ai(void);
 static bool t_bol(void);
 static bool t_eol(void);
 static bool t_mod(void);
@@ -363,11 +363,6 @@ f_move(const Arg *arg) {
 	fcur=arg->m(fcur);
 }
 
-void /* Move cursor as per arg->m, then copy at selection */
-f_moveb(const Arg *arg) {
-	fsel=fcur=arg->m(fcur);
-}
-
 void /* Got to atoi(arg->v) position in the current line */
 f_offset(const Arg *arg) {
 	fcur.o=atoi(arg->v);
@@ -377,14 +372,6 @@ f_offset(const Arg *arg) {
 
 void /* Pipe selection through arg->v external command. Your responsibility: call only if t_rw() */
 f_pipe(const Arg *arg) {
-	i_pipetext(arg->v);
-	statusflags|=S_Modified;
-	lastaction=LastPipe;
-}
-
-void /* Pipe full lines including the selection through arg->v external command. Your responsibility: call only if t_rw() */
-f_pipelines(const Arg *arg) {
-	f_extsel(&(const Arg){ .i = ExtLines });
 	i_pipetext(arg->v);
 	statusflags|=S_Modified;
 	lastaction=LastPipe;
@@ -1405,12 +1392,13 @@ i_update(void) {
 	else {
 		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
-		snprintf(title, BUFSIZ, "%s [%s]%s%s%s %ld,%d  %s",
+		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
 			(filename == NULL?"<No file>":filename),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
 			(t_mod()?"[+]":""),
 			(!t_rw()?"[RO]":""),
 			(statusflags&S_CaseIns?"[icase]":""),
+			(statusflags&S_AutoIndent?"[ai]":""),
 			ncur, (int)fcur.o,
 			(scrline==fstline?
 				(nlst<lines3?"All":"Top"):
@@ -1439,7 +1427,7 @@ i_update(void) {
 void /* Print help, die */
 i_usage(void) {
 	fputs("sandy - simple editor\n", stderr);
-	i_die("usage: sandy [-r] [-u] [-t TABSTOP] [-s SYNTAX] [file | -]\n");
+	i_die("usage: sandy [-a] [-r] [-u] [-t TABSTOP] [-s SYNTAX] [file | -]\n");
 }
 
 bool /* Write buffer to disk */
@@ -1625,6 +1613,10 @@ m_tosel(Filepos pos) {
 
 /* T_* FUNCTIONS
 	Used to test for conditions, take no arguments and return bool. */
+bool /* TRUE is autoindent is on */
+t_ai(void) {
+	return (statusflags & S_AutoIndent);
+}
 
 bool /* TRUE at the beginning of line */
 t_bol(void) {
@@ -1678,6 +1670,8 @@ main(int argc, char **argv){
 	for(i = 1; i < argc && argv[i][0] == '-' && argv[i][1] != '\0'; i++) {
 		if(!strcmp(argv[i], "-r")) {
 			statusflags|=S_Readonly;
+		} else if(!strcmp(argv[i], "-a")) {
+			statusflags|=S_AutoIndent;
 		} else if(!strcmp(argv[i], "-t")) {
 			if(++i < argc) {
 				tabstop=atoi(argv[i]);

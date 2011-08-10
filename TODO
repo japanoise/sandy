@@ -2,7 +2,6 @@ In no particular order, at sandy.c:
 - Update manpage
 - Create m_*vline
 - Bracket matching?
-- Autoindenting?
 - Number modifier?
 - Smart end? is it really needed?
 - BUG: high CPU usage on continuous resize

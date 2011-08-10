@@ -3,7 +3,7 @@
 sandy \- simple ncurses text editor
 .SH SYNOPSIS
 .B sandy
-.RB [ \-hruS ]
+.RB [ \-ahruS ]
 .RB [ \-t
 .IR tabstop ]
 .RB [ \-s
@@ -15,6 +15,9 @@ lets you perform basic editing and pipe the selection through arbitrary
 commands.  A small degree of external control can be achieved by writing to a
 named pipe.
 .SH OPTIONS
+.TP
+.B \-a
+Autoindents text while editing.
 .TP
 .B \-h
 Prints usage information to stderr, then exits.

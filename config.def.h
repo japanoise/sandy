@@ -20,6 +20,11 @@ static const char   spcstr[2]  = { ' ', 0 };
 static const char   nlstr[1]   = { 0 };
 #endif
 
+/* Helper config functions, not used in main code */
+static void f_moveb(const Arg*);
+static void f_pipeb(const Arg*);
+static void f_pipelines(const Arg*);
+
 /* Args to f_spawn */
 #define PROMPT(prompt, default, cmd) { .v = (const char *[]){ "/bin/sh", "-c", \
 	"dmenu -v >/dev/null 2>&1 || DISPLAY=\"\";"\
@@ -99,12 +104,14 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('H'), { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel } },
 { .keyv.c = CONTROL('H'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
 { .keyv.c = CONTROL('I'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\t" } },
+{ .keyv.c = CONTROL('J'), { t_rw,  t_ai, 0,   0 },  f_pipeb,     { .v = "awk 'BEGIN{ l=\"\\n\" } ; { if(match($0, \"^[\t ]+[^\t ]\")) l=substr($0, RSTART, RLENGTH-1); else l=\"\";  if(FNR==NR && $0 ~ /^[\t ]+$/) print \"\" ; else print }; END{ ORS=\"\"; print l }'" } } ,
 { .keyv.c = CONTROL('J'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = CONTROL('J'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 { .keyv.c = CONTROL('K'), { t_eol, t_rw, 0,   0 },  f_delete,    { .m = m_nextchar } },
 { .keyv.c = CONTROL('K'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol } },
 { .keyv.c = CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0 } },
 { .keyv.c = META('l'),    { t_sel, t_rw, 0,   0 },  f_pipe,      { .v = "tr [A-Z] [a-z]" } },
+{ .keyv.c = CONTROL('M'), { t_rw,  t_ai, 0,   0 },  f_pipeb,     { .v = "awk 'BEGIN{ l=\"\\n\" } ; { if(match($0, \"^[\t ]+[^\t ]\")) l=substr($0, RSTART, RLENGTH-1); else l=\"\";  if(FNR==NR && $0 ~ /^[\t ]+$/) print \"\" ; else print }; END{ ORS=\"\"; print l }'" } } ,
 { .keyv.c = CONTROL('M'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = CONTROL('M'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 { .keyv.c = CONTROL('N'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
@@ -156,6 +163,7 @@ static const Command cmds[] = { /* if(arg == 0) arg.v=regex_match */
 {"^offset (.*)$",   { 0,     0,    0 }, f_offset, { 0 } },
 {"^set icase$",     { 0,     0,    0 }, f_toggle, { .i = S_CaseIns } },
 {"^set ro$",        { 0,     0,    0 }, f_toggle, { .i = S_Readonly } },
+{"^set ai$",        { 0,     0,    0 }, f_toggle, { .i = S_AutoIndent } },
 {"^q$",             { t_mod, 0,    0 }, f_toggle, { .i = S_Warned } },
 {"^q$",             { 0,     0,    0 }, f_toggle, { .i = S_Running } },
 {"^q!$",            { 0,     0,    0 }, f_toggle, { .i = S_Running } },
@@ -291,3 +299,24 @@ static const short  bgcolors[LastBG] = {
 	[SelBG] = COLOR_YELLOW,
 };
 
+/* Helper config functions implementation */
+void /* Move cursor as per arg->m, then cancel selection */
+f_moveb(const Arg *arg) {
+	fsel=fcur=arg->m(fcur);
+}
+
+void /* Pipe selection from bol, then cancel selection */
+f_pipeb(const Arg *arg) {
+	i_sortpos(&fsel, &fcur);
+	fsel.o=0;
+	f_pipe(arg);
+	fsel=fcur;
+}
+
+void /* Pipe full lines including the selection */
+f_pipelines(const Arg *arg) {
+	f_extsel(&(const Arg){ .i = ExtLines });
+	i_pipetext(arg->v);
+	statusflags|=S_Modified;
+	lastaction=LastPipe;
+}
