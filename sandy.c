@@ -313,7 +313,8 @@ f_extsel(const Arg *arg) {
 	case ExtDefault:
 	default:
 		if(fsel.o == 0 && fcur.o == fcur.l->len) f_extsel(&(const Arg){.i = ExtAll});
-		else f_extsel(&(const Arg){.i = ExtLines});
+		else if (t_sel() || ISWORDBRK(fcur.l->c[fcur.o])) f_extsel(&(const Arg){.i = ExtLines});
+		else f_extsel(&(const Arg){.i = ExtWord});
 	}
 }
 
