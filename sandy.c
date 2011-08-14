@@ -297,6 +297,7 @@ f_delete(const Arg *arg) {
 
 void /* Extend the selection as per arg->i (see enums above) */
 f_extsel(const Arg *arg) {
+	fmrk=fcur;
 	i_sortpos(&fsel, &fcur);
 	switch(arg->i) {
 	case ExtWord:

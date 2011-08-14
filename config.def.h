@@ -315,7 +315,7 @@ f_move2(const Arg *arg) {
 	fsel=fcur=arg->m(fcur);
 }
 
-void /* Pipe selection from bol, then select last lain only */
+void /* Pipe selection from bol, then select last line only */
 f_pipe2(const Arg *arg) {
 	i_sortpos(&fsel, &fcur);
 	fsel.o=0;
