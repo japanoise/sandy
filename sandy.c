@@ -1438,7 +1438,7 @@ i_writefile(char *fname) {
 	bool wok=TRUE;
 	Line *l;
 
-	if (fname != NULL && (fd = open(fname, O_WRONLY|O_TRUNC|O_CREAT, S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
+	if (fname != NULL && (fd = open(fname, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)) == -1) {
 		/* error */
 		tmptitle="WARNING! Can't save file!!!";
 		return FALSE;
