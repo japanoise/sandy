@@ -667,10 +667,17 @@ i_die(char *str) {
 
 void /* The lines between l0 and l1 should be redrawn to the screen */
 i_dirtyrange(Line *l0, Line *l1) {
-	Filepos pos0, pos1;
-	pos0.l=l0, pos1.l=l1, pos0.o=pos1.o=0;
-	i_sortpos(&pos0, &pos1);
-	for(; pos0.l && pos0.l != pos1.l->next; pos0.l=pos0.l->next) pos0.l->dirty=TRUE;
+	Line *l;
+	bool d=FALSE;
+
+	for(l=fstline; l ; l=l->next) { /* Warning: l0 and/or l1 may not even exist!!! */
+		if(d && (l==l0 || l==l1)) {
+			l->dirty=TRUE;
+			break;
+		}
+		if(l==l0 || l==l1) d^=1;
+		if(d) l->dirty=TRUE;
+	}
 }
 
 bool /* Delete text between pos0 and pos1, which MUST be in order, fcur integrity is NOT assured after deletion, fsel integrity is returned as a bool */
@@ -688,7 +695,7 @@ i_deltext(Filepos pos0, Filepos pos1) {
 		pos0.l->c[pos0.l->len]='\0';
 		i_calcvlen(pos0.l);
 	} else {
-		pos0.l->len=pos0.o; pos0.l->c[pos0.l->len]='\0';
+		pos0.l->len=pos0.o; pos0.l->c[pos0.l->len]='\0'; pos0.l->dirty=TRUE; /* <<-- glitch in screen updates! */
 		/* i_calcvlen is unneeded here, because we call i_addtext later */
 		while(pos1.l!=ldel) {
 			if(pos1.l==pos0.l->next)
