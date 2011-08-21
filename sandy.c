@@ -444,7 +444,7 @@ f_spawn(const Arg *arg) {
 	int pid=-1;
 	reset_shell_mode();
 	if((pid=fork()) == 0) {
-		setsid();
+		/* setsid() used to be called here, but it does not look as a good idea anymore. TODO: test and delete! */
 		execvp(((char **)arg->v)[0], (char **)arg->v);
 		fprintf(stderr, "sandy: execvp %s", ((char **)arg->v)[0]);
 		perror(" failed");
@@ -452,7 +452,7 @@ f_spawn(const Arg *arg) {
 	} else if(pid>0) waitpid(pid, NULL, 0);
 	reset_prog_mode();
 	if(titlewin) redrawwin(titlewin);
-	redrawwin(textwin);
+	redrawwin(textwin); /* TODO: make this work! */
 }
 
 void
