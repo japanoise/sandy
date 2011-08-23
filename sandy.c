@@ -381,7 +381,7 @@ f_pipe(const Arg *arg) {
 
 void /* Pipe selection through arg->v external command but do not update text on screen */
 f_pipero(const Arg *arg) {
-	char oldsf=statusflags;
+	long oldsf=statusflags;
 
 	statusflags|=S_Readonly;
 	i_pipetext(arg->v);
