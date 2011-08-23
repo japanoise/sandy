@@ -79,11 +79,19 @@ typedef struct {                      /** A keybinding */
 	const Arg arg;                /* Argument to func() */
 } Key;
 
+typedef struct {                      /** A mouse click */
+	mmask_t mask;                 /* Mouse mask */
+	bool place[2];                /* Place fcur / fsel at click place before testing */
+	bool (*test[3])(void);        /* Conditions to match, make sure the last one is 0x00 */
+	void (*func)(const Arg *arg); /* Function to perform */
+	const Arg arg;                /* Argument to func() */
+} Click;
+
 typedef struct {                      /** A command read at the fifo */
 	const char *re_text;          /* A regex to match the command, must have a parentheses group for argument */
 	bool (*test[3])(void);        /* Conditions to match, make sure the last one is 0x00 */
 	void (*func)(const Arg *arg); /* Function to perform, argument is determined as arg->v from regex above */
-	const Arg arg;                /* Argument to func() */
+	const Arg arg;                /* Argument to func(), if empty will fill .v = re_match */
 } Command;
 
 #define SYN_COLORS 8
@@ -766,9 +774,12 @@ i_edit(void) {
 		/* NCurses special chars are processed first to avoid UTF-8 collision */
 		if(ch>=KEY_MIN) {
 			/* These are not really chars */
+#if HANDLE_MOUSE
 			if(ch==KEY_MOUSE) {
 				i_mouse();
-			} else for(i=0; i<LENGTH(curskeys); i++) {
+			} else
+#endif /* HANDLE_MOUSE */
+			for(i=0; i<LENGTH(curskeys); i++) {
 				if(ch == curskeys[i].keyv.i && i_dotests(curskeys[i].test) ) {
 					if(curskeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					curskeys[i].func(&(curskeys[i].arg));
@@ -893,29 +904,28 @@ i_lineno(Line *l0) {
 	return i;
 }
 
+#if HANDLE_MOUSE
 void /* Process mouse input */
 i_mouse(void) {
+	int i;
 	static MEVENT ev;
+	Filepos f;
 
 	if(getmouse(&ev) == ERR) return;
 	if(!wmouse_trafo(textwin, &ev.y, &ev.x, FALSE)) return;
-	if(ev.bstate & (REPORT_MOUSE_POSITION|BUTTON1_RELEASED)) {
-		fcur=i_scrtofpos(ev.x, ev.y); /* Select text */
-		//if(ev.bstate & BUTTON1_RELEASED) mousemask(defmmask,NULL);
-#ifdef HOOK_SELECT_MOUSE
-		HOOK_SELECT_MOUSE;
-#endif
-	} else if(ev.bstate & (BUTTON1_CLICKED|BUTTON1_PRESSED)) {
-		fsel=fcur=i_scrtofpos(ev.x, ev.y); /* Move cursor */
-		//if(ev.bstate & BUTTON1_PRESSED) mousemask(defmmask|REPORT_MOUSE_POSITION,NULL);
-	} else if(ev.bstate & (BUTTON1_DOUBLE_CLICKED)) {
-		fsel=fcur=i_scrtofpos(ev.x, ev.y); /* Select word */
-		f_extsel(&(const Arg){.i = ExtWord});
-	} else if(ev.bstate & (BUTTON1_TRIPLE_CLICKED)) {
-		fsel=fcur=i_scrtofpos(ev.x, ev.y); /* Select line */
-		f_extsel(&(const Arg){.i = ExtLines});
-	}
+
+	for(i=0; i<LENGTH(clks); i++)
+		if(ev.bstate & clks[i].mask) { /* Warning! cursor placement code takes place BEFORE tests are taken into account */
+			f=i_scrtofpos(ev.x, ev.y); /* While this allows to extend the selection, it may cause some confusion */
+			if(clks[i].place[0]) fcur=f;
+			if(clks[i].place[1]) fsel=f;
+			if(i_dotests(clks[i].test)) {
+				if(clks[i].func) clks[i].func(&(clks[i].arg));
+				break;
+			}
+		}
 }
+#endif /* HANDLE_MOUSE */
 
 void /* Pipe text between fsel and fcur through cmd */
 i_pipetext(const char *cmd) {
@@ -1094,6 +1104,7 @@ i_resize(void) {
 	statusflags|=S_DirtyScr;
 }
 
+#if HANDLE_MOUSE
 Filepos /* Return file position at screen coordinates x and y*/
 i_scrtofpos(int x, int y) {
 	Filepos pos;
@@ -1118,6 +1129,7 @@ i_scrtofpos(int x, int y) {
 	}
 	return pos;
 }
+#endif /* HANDLE_MOUSE */
 
 bool /* Update find_res[sel_re] and sel_re. Return TRUE if find term is a valid RE or NULL */
 i_setfindterm(char *find_term) {
@@ -1248,7 +1260,9 @@ i_termwininit(void) {
 	curs_set(1);
 	scrollok(textwin, FALSE);
 	//intrflush(NULL, TRUE); /* TODO: test this */
+#if HANDLE_MOUSE
 	mousemask(defmmask, NULL);
+#endif /* HANDLE_MOUSE */
 }
 
 void /* Repaint screen. This is where everything happens. Apologies for the unnecessary complexity and length */

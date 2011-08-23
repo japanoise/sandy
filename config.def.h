@@ -1,7 +1,8 @@
 /* A simplified way to customize */
 #define HILIGHT_CURRENT 1
-#define SHOW_NONPRINT   1
 #define HILIGHT_SYNTAX  1
+#define SHOW_NONPRINT   0
+#define HANDLE_MOUSE    1
 
 /* Things unlikely to be changed, yet still in the config.h file */
 static const bool   isutf8     = TRUE;
@@ -61,7 +62,6 @@ static void f_pipenull(const Arg*);
 
 /* Hooks are launched from the main code */
 #define HOOK_SAVE_NO_FILE f_spawn (&(const Arg)SAVEAS)
-#define HOOK_SELECT_MOUSE f_pipero(&(const Arg)TOSEL)
 #undef  HOOK_DELETE_ALL   /* This affects every delete */
 #undef  HOOK_SELECT_ALL   /* This affects every selection */
 
@@ -162,8 +162,23 @@ static const Key stdkeys[] = {
 { .keyv.c = META('.'),    { 0,     0,    0,   0 },  f_move,      { .m = m_eof } },
 };
 
+#if HANDLE_MOUSE
+/*Mouse clicks */
+static const Click clks[] = {
+/* mouse mask,           fcur / fsel,      tests,               func,       arg */
+{BUTTON1_CLICKED,        { TRUE , TRUE  }, { 0,     0,     0 }, 0,          { 0 } },
+{BUTTON3_CLICKED,        { TRUE , FALSE }, { t_sel, 0,     0 }, f_pipero,   TOSEL },
+{BUTTON2_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_pipenull, FROMSEL },
+/* {BUTTON4_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_prevscr } }, */
+/* {BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } }, */
+/* ^^ NCurses is a sad old library.... it does not include button 5 nor cursor movement in its mouse declaration by default */
+{BUTTON1_DOUBLE_CLICKED, { TRUE , TRUE  }, { 0,     0,     0 }, f_extsel,   { .i = ExtWord }  },
+{BUTTON1_TRIPLE_CLICKED, { TRUE , TRUE  }, { 0,     0,     0 }, f_extsel,   { .i = ExtLines }  },
+};
+#endif /* HANDLE_MOUSE */
+
 /* Commands read at the fifo */
-static const Command cmds[] = { /* if(arg == 0) arg.v=regex_match */
+static const Command cmds[] = { /* REMEMBER: if(arg == 0) arg.v=regex_match */
 /* regex,           tests,              func      arg */
 {"^([0-9]+)$",      { 0,     0,    0 }, f_line ,  { 0 } },
 {"^/(.*)$",         { 0,     0,    0 }, f_findfw, { 0 } },
