@@ -181,7 +181,7 @@ static int       fifofd;                    /* Command fifo file descriptor */
 static long      statusflags=S_Running;     /* Status flags, very important, OR'd (see enums above) */
 static int       lastaction=LastNone;       /* The last action we took (see enums above) */
 static int       cols, lines;               /* Ncurses: to use instead of COLS and LINES, wise */
-static mmask_t   defmmask=ALL_MOUSE_EVENTS; /* Ncurses: mouse event mask */
+static mmask_t   defmmask = 0;              /* Ncurses: mouse event mask */
 
 /* Functions */
 /* f_* functions can be linked to an action or keybinding */
@@ -299,6 +299,7 @@ f_delete(const Arg *arg) {
 	i_addundo(FALSE, pos0, pos1, s);
 	if(i_deltext(pos0, pos1)) fcur=pos0;
 	else fcur=fsel=pos0;
+	if(fsel.o>fsel.l->len) fsel.o=fsel.l->len;
 	statusflags|=S_Modified;
 	lastaction=LastDelete;
 }
@@ -1238,6 +1239,8 @@ i_sortpos(Filepos *pos0, Filepos *pos1) {
 
 void /* Initialize terminal */
 i_termwininit(void) {
+	int i;
+
 	raw();
 	noecho();
 	nl();
@@ -1261,6 +1264,7 @@ i_termwininit(void) {
 	scrollok(textwin, FALSE);
 	//intrflush(NULL, TRUE); /* TODO: test this */
 #if HANDLE_MOUSE
+	for(i=0; i<LENGTH(clks); i++) defmmask|=clks[i].mask;
 	mousemask(defmmask, NULL);
 #endif /* HANDLE_MOUSE */
 }
