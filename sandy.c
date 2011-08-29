@@ -253,6 +253,7 @@ static bool t_warn(void);
 /* m_ functions represent a cursor movement and can be passed in an Arg */
 static Filepos m_bof(Filepos);
 static Filepos m_bol(Filepos);
+static Filepos m_smartbol(Filepos);
 static Filepos m_eof(Filepos);
 static Filepos m_eol(Filepos);
 static Filepos m_nextchar(Filepos);
@@ -1506,8 +1507,14 @@ m_bof(Filepos pos) {
 	return pos;
 }
 
-Filepos /* Go to (smart) beginning of line */
+Filepos /* Go to beginning of line */
 m_bol(Filepos pos) {
+	pos.o=0;
+	return pos;
+}
+
+Filepos /* Go to smart beginning of line */
+m_smartbol(Filepos pos) {
 	Filepos vbol=pos;
 
 	vbol.o=0;
