@@ -347,7 +347,7 @@ f_insert(const Arg *arg) {
 		i_addtoundo(newcur, arg->v);
 	else {
 		i_addundo(TRUE, fcur, newcur, strdup((char*)arg->v));
-		fsel=(fcur.l == newcur.l ? fcur : newcur);
+		if(fcur.l!=newcur.l) fsel=newcur;
 	}
 	fcur=newcur;
 	statusflags|=(S_Modified|S_GroupUndo);
