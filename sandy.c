@@ -1004,7 +1004,7 @@ i_pipetext(const char *cmd) {
 				else FD_CLR(pout[0], &fdI);
 			if(FD_ISSET(perr[0], &fdI) && nerr>0) {
 				nerr = read(perr[0], ebuf, PIPESIZ); /* Blatant TODO: take last line of stderr and copy as tmptitle */
-				tmptitle="WARNING! command reported an error!!!";
+				if(nerr!=0) tmptitle="WARNING! command reported an error!!!";
 				if(nerr<0) break;
 			} else if(nerr>0) FD_SET(perr[0], &fdI);
 			       else FD_CLR(perr[0], &fdI);
