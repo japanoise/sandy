@@ -932,16 +932,22 @@ void /* Pipe text between fsel and fcur through cmd */
 i_pipetext(const char *cmd) {
 	struct timeval tv;
 	char *s = NULL;
-	int pin[2], pout[2], pid=-1, nr=1, nw, written, iw=0, closed=0, exstatus;
-	char *buf = NULL;
+	int pin[2], pout[2], perr[2], pid=-1, nr=1, nerr=1, nw, written, iw=0, closed=0, exstatus;
+	char *buf  = NULL;
+	char *ebuf = NULL;
 	Filepos auxp;
 	fd_set fdI, fdO;
 
 	if(!cmd || cmd[0] == '\0') return;
 	setenv(envs[EnvPipe], cmd, 1);
-	if (pipe(pin) == -1) return;
-	if (pipe(pout) == -1) {
+	if(pipe(pin) == -1) return;
+	if(pipe(pout) == -1) {
 		close(pin[0]); close(pin[1]);
+		return;
+	}
+	if(pipe(perr) == -1) {
+		close(pin[0]); close(pin[1]);
+		close(pout[0]); close(pout[1]);
 		return;
 	}
 
@@ -954,9 +960,10 @@ i_pipetext(const char *cmd) {
 	if((pid = fork()) == 0) {
 		dup2(pin[0], 0);
 		dup2(pout[1], 1);
+		dup2(perr[1], 2);
 		close(pin[0]);  close(pin[1]);
 		close(pout[0]); close(pout[1]);
-		/* TODO: close stderr? redirect? update screen?? */
+		close(perr[0]); close(perr[1]);
 		execl("/bin/sh", "sh", "-c", cmd, NULL); /* I actually like it with sh so I can input pipes et al. */
 		fprintf(stderr, "sandy: execl sh -c %s", cmd);
 		perror(" failed");
@@ -966,6 +973,7 @@ i_pipetext(const char *cmd) {
 	if (pid > 0) {
 		close(pin[0]);
 		close(pout[1]);
+		close(perr[1]);
 		if (t_rw()) {
 			i_addundo(FALSE, fsel, fcur, strdup(s));
 			undos->flags^=RedoMore;
@@ -974,13 +982,15 @@ i_pipetext(const char *cmd) {
 		}
 		fcntl(pin[1],  F_SETFL, O_NONBLOCK);
 		fcntl(pout[0], F_SETFL, O_NONBLOCK);
-		buf  = calloc(1, PIPESIZ+1);
+		fcntl(perr[0], F_SETFL, O_NONBLOCK);
+		buf   = calloc(1, PIPESIZ+1);
+		ebuf  = calloc(1, PIPESIZ+1);
 		FD_ZERO(&fdO); FD_SET(pin[1] , &fdO);
-		FD_ZERO(&fdI); FD_SET(pout[0], &fdI);
+		FD_ZERO(&fdI); FD_SET(pout[0], &fdI); FD_SET(perr[0], &fdI);
 		tv.tv_sec = 5; tv.tv_usec = 0; nw=s?strlen(s):0;
 		while (select(FD_SETSIZE, &fdI, &fdO, NULL, &tv) && (nw > 0 || nr > 0)) {
 			fflush(NULL);
-			if (FD_ISSET(pout[0], &fdI) && nr>0) {
+			if(FD_ISSET(pout[0], &fdI) && nr>0) {
 				nr = read(pout[0], buf, PIPESIZ);
 				if (nr>=0) buf[nr]='\0';
 				else break; /* ...not seen it yet */
@@ -991,8 +1001,14 @@ i_pipetext(const char *cmd) {
 					fcur=auxp;
 				}
 			} else  if (nr>0) FD_SET(pout[0], &fdI);
-				else FD_ZERO(&fdI);
-			if (FD_ISSET(pin[1] , &fdO) && nw>0) {
+				else FD_CLR(pout[0], &fdI);
+			if(FD_ISSET(perr[0], &fdI) && nerr>0) {
+				nerr = read(perr[0], ebuf, PIPESIZ); /* Blatant TODO: take last line of stderr and copy as tmptitle */
+				tmptitle="WARNING! command reported an error!!!";
+				if(nerr<0) break;
+			} else if(nerr>0) FD_SET(perr[0], &fdI);
+			       else FD_CLR(perr[0], &fdI);
+			if(FD_ISSET(pin[1] , &fdO) && nw>0) {
 				written=write(pin[1], &(s[iw]), (nw<PIPESIZ?nw:PIPESIZ));
 				if (written < 0) break; /* broken pipe? */
 				iw+=(nw<PIPESIZ?nw:PIPESIZ);
@@ -1007,12 +1023,15 @@ i_pipetext(const char *cmd) {
 		if (t_rw())
 			undos->flags^=RedoMore;
 		free(buf);
+		free(ebuf);
 		if(!closed) close(pin[1]);
 		waitpid(pid, &exstatus, 0); /* We don't want to close the pipe too soon */
 		close(pout[0]);
+		close(perr[0]);
 	} else {
 		close(pin[0]);  close(pin[1]);
 		close(pout[0]); close(pout[1]);
+		close(perr[0]); close(perr[1]);
 	}
 
 	/* Things I want back to normal */

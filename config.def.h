@@ -39,8 +39,8 @@ static void f_pipenull(const Arg*);
 #define FINDBW  PROMPT("Find (back):", "${SANDY_FIND}",   "?")
 #define PIPE    PROMPT("Pipe:",        "${SANDY_PIPE}",   "!")
 #define SAVEAS  PROMPT("Save as:",     "${SANDY_FILE}",   "w")
-#define REPLACE PROMPT("Replace:",     "",                "!echo 2>/dev/null -n ")
-#define SED     PROMPT("Sed:",         "",                "!sed 2>/dev/null ")
+#define REPLACE PROMPT("Replace:",     "",                "!echo -n ")
+#define SED     PROMPT("Sed:",         "",                "!sed ")
 #define CMD_P   PROMPT("Command:",     "/\n?\nw\nq\n!\nsyntax\noffset\nicase\nro\nai", "")
 
 /* Args to f_pipe and friends, simple examples are inlined instead */
