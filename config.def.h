@@ -30,7 +30,7 @@ static void f_pipenull(const Arg*);
 /* Args to f_spawn */
 #define PROMPT(prompt, default, cmd) { .v = (const char *[]){ "/bin/sh", "-c", \
 	"dmenu -v >/dev/null 2>&1 || DISPLAY=\"\";"\
-	"if [ -n \"$DISPLAY\" ]; then arg=\"`echo \\\"" default "\\\" | dmenu -p '" prompt "'`\";" \
+	"if [ -n \"$DISPLAY\" ]; then arg=\"`echo \\\"" default "\\\" | dmenu $DMENU_OPTS -p '" prompt "'`\";" \
 	"else if slmenu -v >/dev/null 2>&1; then arg=\"`echo \\\"" default "\\\" | slmenu -p '" prompt "'`\";" \
 	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \" >&2; read arg; fi; fi &&" \
 	"echo " cmd "\"$arg\" > ${SANDY_FIFO}", NULL } }
@@ -41,7 +41,7 @@ static void f_pipenull(const Arg*);
 #define SAVEAS  PROMPT("Save as:",     "${SANDY_FILE}",   "w")
 #define REPLACE PROMPT("Replace:",     "",                "!echo 2>/dev/null -n ")
 #define SED     PROMPT("Sed:",         "",                "!sed 2>/dev/null ")
-#define CMD_P   PROMPT("Command:",     "/\n?\nw\n!\nsyntax\noffset", "")
+#define CMD_P   PROMPT("Command:",     "/\n?\nw\nq\n!\nsyntax\noffset\nicase\nro\nai", "")
 
 /* Args to f_pipe and friends, simple examples are inlined instead */
 /* TODO: make sandy-sel to wrap xsel or standalone */
@@ -169,8 +169,8 @@ static const Click clks[] = {
 {BUTTON1_CLICKED,        { TRUE , TRUE  }, { 0,     0,     0 }, 0,          { 0 } },
 {BUTTON3_CLICKED,        { TRUE , FALSE }, { t_sel, 0,     0 }, f_pipero,   TOSEL },
 {BUTTON2_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_pipenull, FROMSEL },
-/* {BUTTON4_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_prevscr } }, */
-/* {BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } }, */
+//{BUTTON4_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_prevscr } },
+//{BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } },
 /* ^^ NCurses is a sad old library.... it does not include button 5 nor cursor movement in its mouse declaration by default */
 {BUTTON1_DOUBLE_CLICKED, { TRUE , TRUE  }, { 0,     0,     0 }, f_extsel,   { .i = ExtWord }  },
 {BUTTON1_TRIPLE_CLICKED, { TRUE , TRUE  }, { 0,     0,     0 }, f_extsel,   { .i = ExtLines }  },
@@ -188,9 +188,9 @@ static const Command cmds[] = { /* REMEMBER: if(arg == 0) arg.v=regex_match */
 {"^w[ \t]*(.*)$",   { t_mod, t_rw, 0 }, f_save,   { 0 } },
 {"^syntax (.*)$",   { 0,     0,    0 }, f_syntax, { 0 } },
 {"^offset (.*)$",   { 0,     0,    0 }, f_offset, { 0 } },
-{"^set icase$",     { 0,     0,    0 }, f_toggle, { .i = S_CaseIns } },
-{"^set ro$",        { 0,     0,    0 }, f_toggle, { .i = S_Readonly } },
-{"^set ai$",        { 0,     0,    0 }, f_toggle, { .i = S_AutoIndent } },
+{"^icase$",         { 0,     0,    0 }, f_toggle, { .i = S_CaseIns } },
+{"^ro$",            { 0,     0,    0 }, f_toggle, { .i = S_Readonly } },
+{"^ai$",            { 0,     0,    0 }, f_toggle, { .i = S_AutoIndent } },
 {"^q$",             { t_mod, 0,    0 }, f_toggle, { .i = S_Warned } },
 {"^q$",             { 0,     0,    0 }, f_toggle, { .i = S_Running } },
 {"^q!$",            { 0,     0,    0 }, f_toggle, { .i = S_Running } },
