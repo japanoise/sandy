@@ -125,23 +125,23 @@ enum { LastNone, LastDelete, LastInsert, LastPipe, LastPipeRO, };
 enum { EnvFind, EnvPipe, EnvLine, EnvOffset, EnvFile, EnvSyntax, EnvFifo, EnvLast, };
 
 enum { /* To use in statusflags */
-	S_Running    = 1,
-	S_Readonly   = 1<<1,
-	S_InsEsc     = 1<<2,
-	S_CaseIns    = 1<<3,
-	S_Modified   = 1<<4,
-	S_DirtyScr   = 1<<5,
-	S_DirtyDown  = 1<<6,
-	S_NeedResize = 1<<7,
-	S_Warned     = 1<<8,
-	S_GroupUndo  = 1<<9,
-	S_AutoIndent = 1<<10,
+	S_Running    = 1,     /* Keep the editor running, flip to stop */
+	S_Readonly   = 1<<1,  /* File is readonly, this should be enforced so that file is not modified */
+	S_InsEsc     = 1<<2,  /* Insert next character as-is, even if it's a control sequence */
+	S_CaseIns    = 1<<3,  /* Search is casi insensitive */
+	S_Modified   = 1<<4,  /* File has been modified, set automatically */
+	S_DirtyScr   = 1<<5,  /* Screen is dirty and should be repainted, set automatically */
+	S_DirtyDown  = 1<<6,  /* Line has changed so that we must repaint from here down, set automatically */
+	S_NeedResize = 1<<7,  /* Need to resize screen in next update, set automatically */
+	S_Warned     = 1<<8,  /* Set to warn about file not being saved */
+	S_GroupUndo  = 1<<9,  /* Last action was an insert, so another insert should group with it, set automatically */
+	S_AutoIndent = 1<<10, /* Perform autoindenting on RET */
 };
 
 enum { /* To use in Undo.flags */
-	UndoIns  = 1,
-	UndoMore = 1<<1,
-	RedoMore = 1<<2,
+	UndoIns  = 1,    /* This undo is an insert (otherwise a delete) */
+	UndoMore = 1<<1, /* This undo must be chained with the next one when redoing */
+	RedoMore = 1<<2, /* This undo must be chained with the next one when undoing */
 };
 
 /* Constants */
