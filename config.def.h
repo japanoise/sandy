@@ -74,11 +74,11 @@ static void f_pipenull(const Arg*);
 static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 /* keyv.i,                  tests,                     func,       arg */
 { .keyv.i = KEY_BACKSPACE,  { t_rw,  0,    0,   0 },   f_delete,   { .m = m_prevchar } },
-{ .keyv.i = KEY_DC,         { t_sel, t_rw, 0,   0 },   f_pipe,     TOCLIP },
+{ .keyv.i = KEY_DC,         { t_sel, t_rw, 0,   0 },   f_delete,   { .m = m_tosel    } },
 { .keyv.i = KEY_DC,         { t_rw,  0,    0,   0 },   f_delete,   { .m = m_nextchar } },
-{ .keyv.i = KEY_IC,         { t_sel, 0,    0,   0 },   f_pipero,   TOCLIP },
 { .keyv.i = KEY_SDC,        { t_sel, t_rw, 0,   0 },   f_delete,   { .m = m_tosel } },
 { .keyv.i = KEY_SDC,        { t_rw,  0,    0,   0 },   f_delete,   { .m = m_nextchar } },
+{ .keyv.i = KEY_IC,         { t_sel, 0,    0,   0 },   f_pipero,   TOCLIP },
 { .keyv.i = KEY_SIC,        { t_rw,  0,    0,   0 },   f_pipenull, FROMCLIP },
 { .keyv.i = KEY_HOME,       { t_ai,  0,    0,   0 },   f_moveboth, { .m = m_smartbol } },
 { .keyv.i = KEY_HOME,       { 0,     0,    0,   0 },   f_moveboth, { .m = m_bol      } },
