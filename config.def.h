@@ -31,7 +31,7 @@ static void f_pipenull(const Arg*);
 #define PROMPT(prompt, default, cmd) { .v = (const char *[]){ "/bin/sh", "-c", \
 	"dmenu -v >/dev/null 2>&1 || DISPLAY=\"\";"\
 	"if [ -n \"$DISPLAY\" ]; then arg=\"`echo \\\"" default "\\\" | dmenu $DMENU_OPTS -p '" prompt "'`\";" \
-	"else if slmenu -v >/dev/null 2>&1; then arg=\"`echo \\\"" default "\\\" | slmenu -p '" prompt "'`\";" \
+	"else if slmenu -v >/dev/null 2>&1; then arg=\"`echo \\\"" default "\\\" | slmenu -t -p '" prompt "'`\";" \
 	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \" >&2; read arg; fi; fi &&" \
 	"echo " cmd "\"$arg\" > ${SANDY_FIFO}", NULL } }
 
