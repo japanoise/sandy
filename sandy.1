@@ -3,7 +3,7 @@
 sandy \- simple ncurses text editor
 .SH SYNOPSIS
 .B sandy
-.RB [ \-ahruS ]
+.RB [ \-adhruS ]
 .RB [ \-t
 .IR tabstop ]
 .RB [ \-s
@@ -18,6 +18,9 @@ named pipe.
 .TP
 .B \-a
 Autoindents text while editing.
+.TP
+.B \-d
+Dumps to stdout instead of writing to a file; causes saving to exit immediately.
 .TP
 .B \-h
 Prints usage information to stderr, then exits.

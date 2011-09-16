@@ -136,6 +136,7 @@ enum { /* To use in statusflags */
 	S_Warned     = 1<<8,  /* Set to warn about file not being saved */
 	S_GroupUndo  = 1<<9,  /* Last action was an insert, so another insert should group with it, set automatically */
 	S_AutoIndent = 1<<10, /* Perform autoindenting on RET */
+	S_DumpStdout = 1<<11, /* Dump to stdout instead of writing to a file */
 };
 
 enum { /* To use in Undo.flags */
@@ -424,10 +425,11 @@ f_save(const Arg *arg) {
 	Undo *u;
 
 	if(arg && arg->v && *((char*)arg->v)) {
+		statusflags&=~S_DumpStdout;
 		free(filename);
 		filename=strdup((char*)arg->v);
 		setenv(envs[EnvFile], filename, 1);
-	} else if(filename==NULL) {
+	} else if(filename==NULL && !(statusflags&S_DumpStdout)) {
 		unsetenv(envs[EnvFile]);
 #ifdef HOOK_SAVE_NO_FILE
 		HOOK_SAVE_NO_FILE;
@@ -435,10 +437,11 @@ f_save(const Arg *arg) {
 		return;
 	}
 
-	if(i_writefile(filename)) {
+	if(i_writefile((statusflags & S_DumpStdout)?NULL:filename)) {
 		statusflags&=~S_Modified;
 		for(savestep=0,u=undos; u; u=u->prev, savestep++);
 	}
+	if(statusflags&S_DumpStdout) statusflags&=~S_Running;
 }
 
 void /* Move cursor as per arg->m, then move the selection point to previous cursor */
@@ -1440,7 +1443,7 @@ i_update(void) {
 		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
 		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
-			(filename == NULL?"<No file>":filename),
+			(statusflags&S_DumpStdout?"<Stdout>":(filename == NULL?"<No file>":filename)),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
 			(t_mod()?"[+]":""),
 			(!t_rw()?"[RO]":""),
@@ -1474,7 +1477,7 @@ i_update(void) {
 void /* Print help, die */
 i_usage(void) {
 	fputs("sandy - simple editor\n", stderr);
-	i_die("usage: sandy [-a] [-r] [-u] [-t TABSTOP] [-s SYNTAX] [file | -]\n");
+	i_die("usage: sandy [-a] [-d] [-r] [-u] [-t TABSTOP] [-s SYNTAX] [file | -]\n");
 }
 
 bool /* Write buffer to disk */
@@ -1493,7 +1496,7 @@ i_writefile(char *fname) {
 		if(write(fd, l->c, l->len) == -1 ||
 			(l->next && write(fd, "\n", 1) == -1)) wok=FALSE;
 	}
-	close(fd);
+	if(fd!=1) close(fd);
 	return wok;
 }
 
@@ -1725,6 +1728,8 @@ main(int argc, char **argv){
 			statusflags|=S_Readonly;
 		} else if(!strcmp(argv[i], "-a")) {
 			statusflags|=S_AutoIndent;
+		} else if(!strcmp(argv[i], "-d")) {
+			statusflags|=S_DumpStdout;
 		} else if(!strcmp(argv[i], "-t")) {
 			if(++i < argc) {
 				tabstop=atoi(argv[i]);

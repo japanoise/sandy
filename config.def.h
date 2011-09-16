@@ -192,6 +192,7 @@ static const Command cmds[] = { /* REMEMBER: if(arg == 0) arg.v=regex_match */
 {"^icase$",         { 0,     0,    0 }, f_toggle, { .i = S_CaseIns } },
 {"^ro$",            { 0,     0,    0 }, f_toggle, { .i = S_Readonly } },
 {"^ai$",            { 0,     0,    0 }, f_toggle, { .i = S_AutoIndent } },
+{"^dump$",          { 0,     0,    0 }, f_toggle, { .i = S_DumpStdout } },
 {"^q$",             { t_mod, 0,    0 }, f_toggle, { .i = S_Warned } },
 {"^q$",             { 0,     0,    0 }, f_toggle, { .i = S_Running } },
 {"^q!$",            { 0,     0,    0 }, f_toggle, { .i = S_Running } },
