@@ -41,14 +41,13 @@ static void f_pipenull(const Arg*);
 #define SAVEAS  PROMPT("Save as:",     "${SANDY_FILE}",   "w")
 #define REPLACE PROMPT("Replace:",     "",                "!echo -n ")
 #define SED     PROMPT("Sed:",         "",                "!sed ")
-#define CMD_P   PROMPT("Command:",     "/\n?\nw\nq\n!\nsyntax\noffset\nicase\nro\nai", "")
+#define CMD_P   PROMPT("Command:",     "/\n?\nw\nq\n!\nsyntax\noffset\nicase\nro\nai\ndump", "")
 
 /* Args to f_pipe and friends, simple examples are inlined instead */
-/* TODO: make sandy-sel to wrap xsel or standalone */
-#define TOCLIP     { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -ib || cat > /tmp/.sandy.clipboard.$USER" }
-#define FROMCLIP   { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -ob || cat /tmp/.sandy.clipboard.$USER" }
-#define TOSEL      { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -i  || cat > /tmp/.sandy.selection.$USER" }
-#define FROMSEL    { .v = "xsel -h >/dev/null 2>&1 && test -n \"$DISPLAY\" && xsel -o  || cat /tmp/.sandy.selection.$USER" }
+#define TOCLIP     { .v = "tee /tmp/.sandy.clipboard.$USER | xsel -ib 2>/dev/null" }
+#define FROMCLIP   { .v = "xsel -ob 2>/dev/null || cat /tmp/.sandy.clipboard.$USER" }
+#define TOSEL      { .v = "tee /tmp/.sandy.selection.$USER | xsel -i 2>/dev/null" }
+#define FROMSEL    { .v = "xsel -o 2>/dev/null || cat /tmp/.sandy.selection.$USER" }
 #define AUTOINDENT { .v = "awk 'BEGIN{ l=\"\\n\" }; \
 				{ if(match($0, \"^[\t ]+[^\t ]\")) l=substr($0, RSTART, RLENGTH-1); \
 				  else l=\"\"; \
