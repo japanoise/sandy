@@ -791,7 +791,6 @@ i_edit(void) {
 					break;
 				}
 			}
-			//tmptitle=keyname(ch);
 			goto edit_top;
 		}
 
@@ -960,7 +959,6 @@ i_pipetext(const char *cmd) {
 	/* Things I will undo or free at the end of this function */
 	s = i_gettext(fsel, fcur);
 
-	fflush(stdout);
 	if((pid = fork()) == 0) {
 		dup2(pin[0], 0);
 		dup2(pout[1], 1);
@@ -1285,7 +1283,6 @@ i_termwininit(void) {
 	wtimeout(textwin, 0);
 	curs_set(1);
 	scrollok(textwin, FALSE);
-	//intrflush(NULL, TRUE); /* TODO: test this */
 #if HANDLE_MOUSE
 	for(i=0; i<LENGTH(clks); i++) defmmask|=clks[i].mask;
 	mousemask(defmmask, NULL);
