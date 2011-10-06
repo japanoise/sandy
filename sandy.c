@@ -747,7 +747,6 @@ i_edit(void) {
 	oldsel.l=oldcur.l=fstline;
 	oldsel.o=oldcur.o=0;
 
-	edit_top:
 	while(statusflags & S_Running) {
 		if(fsel.l != oldsel.l) i_dirtyrange(oldsel.l, fsel.l);
 		else if(fsel.o != oldsel.o) fsel.l->dirty=TRUE;
@@ -791,7 +790,7 @@ i_edit(void) {
 					break;
 				}
 			}
-			goto edit_top;
+			continue;
 		}
 
 		/* Mundane characters are processed later */
@@ -814,7 +813,7 @@ i_edit(void) {
 					break;
 				}
 			}
-			goto edit_top;
+			continue;
 		}
 		statusflags&=~(S_InsEsc);
 		if(t_rw()) f_insert(&(const Arg){ .v = c });
