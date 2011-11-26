@@ -340,7 +340,7 @@ f_findfw(const Arg *arg) {
 	if(i_setfindterm((char*)arg->v)) i_find(TRUE);
 }
 
-void /* Insert arg->v at cursor position, deleting the selection if any. Your responsibility: call only if t_rw() */
+void /* Insert arg->v at cursor position. Your responsibility: call only if t_rw() */
 f_insert(const Arg *arg) {
 	Filepos newcur;
 
