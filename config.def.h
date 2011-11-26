@@ -122,7 +122,7 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('K'), { t_eol, t_rw, 0,   0 },  f_delete,    { .m = m_nextchar } },
 { .keyv.c = CONTROL('K'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol } },
 { .keyv.c = CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0 } },
-{ .keyv.c = META('l'),    { t_sel, t_rw, 0,   0 },  f_pipe,      { .v = "tr [A-Z] [a-z]" } }, /* Lowercase */
+{ .keyv.c = META('l'),    { t_sel, t_rw, 0,   0 },  f_pipe,      { .v = "tr [A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ] [a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþ]" } }, /* Lowercase */
 { .keyv.c = CONTROL('M'), { t_rw,  t_ai, 0,   0 },  f_pipeai,    AUTOINDENT } ,
 { .keyv.c = CONTROL('M'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = CONTROL('M'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
@@ -139,7 +139,7 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('T'), { 0,     0,    0,   0 },  f_pipero ,   TOCLIP },
 { .keyv.c = CONTROL('U'), { t_bol, t_rw, 0,   0 },  f_delete,    { .m = m_prevchar } },
 { .keyv.c = CONTROL('U'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_bol } },
-{ .keyv.c = META('u'),    { t_sel, t_rw, 0,   0 },  f_pipe,      { .v = "tr [a-z] [A-Z]" } }, /* Uppercase */
+{ .keyv.c = META('u'),    { t_sel, t_rw, 0,   0 },  f_pipe,      { .v = "tr [a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþ] [A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ] | sed 's/ß/SS/g'" } }, /* Uppercase */
 { .keyv.c = CONTROL('V'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevscr } },
 { .keyv.c = META('v'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextscr } },
 { .keyv.c = CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword } },
