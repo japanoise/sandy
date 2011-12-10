@@ -248,7 +248,7 @@ static const Syntax syntaxes[] = {
 	} },
 
 {"vala", "\\.(vapi|vala)$", {
-	/* HiRed   */  B"[A-Z_][0-9A-Z_]+\\>",
+	/* HiRed   */  B"[A-Z_][0-9A-Z_]+"B,
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|get|set|value|out|ref|enum)"B,
 	/* LoGreen */  B"(uint|uint8|uint16|uint32|uint64|bool|byte|ssize_t|size_t|char|double|string|float|int|long|short|this|base|transient|void|true|false|null|unowned|owned)"B,
 	/* HiMag   */  B"(try|catch|throw|finally|continue|break|return|new|sizeof|signal|delegate)"B,
@@ -258,7 +258,7 @@ static const Syntax syntaxes[] = {
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 {"java", "\\.java$", {
-	/* HiRed   */  B"[A-Z_][0-9A-Z_]+\\>",
+	/* HiRed   */  B"[A-Z_][0-9A-Z_]+"B,
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch)"B,
 	/* LoGreen */  B"(boolean|byte|char|double|float|int|long|short|transient|void|true|false|null)"B,
 	/* HiMag   */  B"(try|catch|throw|finally|continue|break|return|new)"B,
@@ -266,6 +266,16 @@ static const Syntax syntaxes[] = {
 	/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
 	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
+	} },
+{"ruby", "\\.rb$", {
+	/* HiRed   */  "(\\$|@|@@)?"B"[A-Z]+[0-9A-Z_a-z]*",
+	/* HiGreen */  B"(__FILE__|__LINE__|BEGIN|END|alias|and|begin|break|case|class|def|defined\?|do|else|elsif|end|ensure|false|for|if|in|module|next|nil|not|or|redo|rescue|retry|return|self|super|then|true|undef|unless|until|when|while|yield)"B,
+	/* LoGreen */  "([ 	]|^):[0-9A-Z_]+"B,
+	/* HiMag   */  "(/([^/]|(\\/))*/[iomx]*|%r\\{([^}]|(\\}))*\\}[iomx]*)",
+	/* LoMag   */  "(`[^`]*`|%x\\{[^}]*\\})",
+	/* HiBlue  */  "(\"([^\"]|(\\\\\"))*\"|%[QW]?\\{[^}]*\\}|%[QW]?\\([^)]*\\)|%[QW]?<[^>]*>|%[QW]?\\[[^]]*\\]|%[QW]?\\$[^$]*\\$|%[QW]?\\^[^^]*\\^|%[QW]?![^!]*!|\'([^\']|(\\\\\'))*\'|%[qw]\\{[^}]*\\}|%[qw]\\([^)]*\\)|%[qw]<[^>]*>|%[qw]\\[[^]]*\\]|%[qw]\\$[^$]*\\$|%[qw]\\^[^^]*\\^|%[qw]![^!]*!)",
+	/* LoRed   */  "#\\{[^}]*\\}",
+	/* LoBlue  */  "(#[^{].*$|#$)",
 	} },
 #else  /* HILIGHT_SYNTAX */
 {"", "\0", { "\0", "\0", "\0", "\0", "\0", "\0", "\0", "\0" } }
