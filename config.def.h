@@ -204,7 +204,7 @@ static const Command cmds[] = { /* REMEMBER: if(arg == 0) arg.v=regex_match */
 static const Syntax syntaxes[] = {
 #if HILIGHT_SYNTAX
 {"c", "\\.(c(pp|xx)?|h(pp|xx)?|cc)$", {
-	/* HiRed   */  "",
+	/* HiRed   */  "$^",
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)"B,
 	/* LoGreen */  B"(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)"B,
 	/* HiMag   */  B"(goto|continue|break|return)"B,
@@ -215,10 +215,10 @@ static const Syntax syntaxes[] = {
 	} },
 
 {"sh", "\\.sh$", {
-	/* HiRed   */  "",
+	/* HiRed   */  "$^",
 	/* HiGreen */  "^[0-9A-Z_]+\\(\\)",
 	/* LoGreen */  B"(case|do|done|elif|else|esac|exit|fi|for|function|if|in|local|read|return|select|shift|then|time|until|while)"B,
-	/* HiMag   */  "",
+	/* HiMag   */  "$^",
 	/* LoMag   */  "\"(\\\\.|[^\"])*\"",
 	/* HiBlue  */  "(\\{|\\}|\\(|\\)|\\;|\\]|\\[|`|\\\\|\\$|<|>|!|=|&|\\|)",
 	/* LoRed   */  "\\$\\{?[0-9A-Z_!@#$*?-]+\\}?",
@@ -226,11 +226,11 @@ static const Syntax syntaxes[] = {
 	} },
 
 {"makefile", "(Makefile[^/]*|\\.mk)$", {
-	/* HiRed   */  "",
-	/* HiGreen */  "",
+	/* HiRed   */  "$^",
+	/* HiGreen */  "$^",
 	/* LoGreen */  "\\$+[{(][a-zA-Z0-9_-]+[})]",
 	/* HiMag   */  B"(if|ifeq|else|endif)"B,
-	/* LoMag   */  "",
+	/* LoMag   */  "$^",
 	/* HiBlue  */  "^[^ 	]+:",
 	/* LoRed   */  "[:=]",
 	/* LoBlue  */  "#.*$",
@@ -238,12 +238,12 @@ static const Syntax syntaxes[] = {
 
 {"man", "\\.[1-9]x?$", {
 	/* HiRed   */  "\\.(BR?|I[PR]?).*$",
-	/* HiGreen */  "",
+	/* HiGreen */  "$^",
 	/* LoGreen */  "\\.(S|T)H.*$",
 	/* HiMag   */  "\\.(br|DS|RS|RE|PD)",
 	/* LoMag   */  "(\\.(S|T)H|\\.TP)",
 	/* HiBlue  */  "\\.(BR?|I[PR]?|PP)",
-	/* LoRed   */  "",
+	/* LoRed   */  "$^",
 	/* LoBlue  */  "\\\\f[BIPR]",
 	} },
 

@@ -485,7 +485,7 @@ f_syntax(const Arg *arg) {
 				   : !regexec(syntax_file_res[i], filename, 1, NULL, 0)) {
 			for(j=0; j<SYN_COLORS; j++) {
 				if((syntx >= 0) && syntax_res[syntx][j]) regfree(syntax_res[syntx][j]);
-				if(regcomp(syntax_res[i][j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) i_die("Faulty regex.\n");
+				if(syntaxes[i].re_text[j] && regcomp(syntax_res[i][j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) i_die("Faulty regex.\n");
 			}
 			syntx=i;
 			setenv(envs[EnvSyntax], syntaxes[syntx].name, 1);
