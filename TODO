@@ -13,7 +13,7 @@ In no particular order, at sandy.c:
 At config.def.h:
 - Bindings!
 - Use local/system script path and all
-- Choose color-set for either black of white bg
+- Choose color-set for either black or white bg
 - Define more syntaxes
 - Refine syntax regexes
 
