@@ -119,7 +119,7 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0 } },
 { .keyv.c = META('l'),    { t_sel, t_rw, 0,   0 },  f_pipe,      { .v = "tr [A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ] [a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþ]" } }, /* Lowercase */
 { .keyv.c = CONTROL('M'), { t_rw,  t_ai, 0,   0 },  f_pipeai,    AUTOINDENT } ,
-{ .keyv.c = CONTROL('M'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
+{ .keyv.c = CONTROL('M'), { t_rw,  t_nocomm,0,0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = CONTROL('M'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 { .keyv.c = CONTROL('N'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
 { .keyv.c = CONTROL('O'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_tosel } }, /* Swap fsel and fcur */
@@ -155,6 +155,8 @@ static const Key stdkeys[] = {
 #if VIM_BINDINGS
 static const Key commkeys[] = { /* Command mode keys here */
 /* keyv.c,                  tests,                     func,       arg */
+{ .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextchar } },
+{ .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command  } },
 { .keyv.c = { 'b' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_prevword } },
 { .keyv.c = { 'g' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_bof } },
 { .keyv.c = { 'G' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_eof } },
@@ -163,10 +165,18 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'n' },      { t_sel, 0,    0,   0 },  f_findfw,    { 0 } },
 { .keyv.c = { 'N' },      { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
 // TODO: Find a non-complex way to insert line above and beneath
+{ .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_moveboth,  { .m = m_eol } },
 { .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
+{ .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command  } },
+{ .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_moveboth,  { .m = m_bol } },
 { .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
+{ .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command  } },
 // TODO: add P support
 { .keyv.c = { 'p' },      { t_rw,  0,    0,   0 },  f_pipenull,  FROMCLIP },
+{ .keyv.c = { 's' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel    } },
+{ .keyv.c = { 's' },      { t_sel, t_rw, 0,   0 },  f_toggle,    { .i = S_Command    } },
+{ .keyv.c = { 's' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextchar } },
+{ .keyv.c = { 's' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command } },
 { .keyv.c = { 'u' },      { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1 } },
 { .keyv.c = { 'w' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextword } },
 { .keyv.c = { 'x' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel    } },
@@ -175,7 +185,7 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'X' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
 { .keyv.c = { ';' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 { .keyv.c = { ':' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P },
-{ .keyv.c = { '\'' },      { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
+{ .keyv.c = { '\'' },     { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { .keyv.c = { '.' },      { t_rw,  0,    0,   0 },  f_repeat,    { 0 } },
 { .keyv.c = { '/' },      { 0,     0,    0,   0 },  f_spawn,     FIND },
 { .keyv.c = { ' ' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextchar } },
@@ -190,8 +200,6 @@ static const Key commkeys[] = { /* Command mode keys here */
  * t/T do until char (adj)
  * y yank things (verb)
  * {/} start/end of paragraph (?)
- * a insert mode in next char
- * s delete char and insert mode
  * d delete/cut things (verb)
  * hjkl movement (adj)
  * c replace things (verb)

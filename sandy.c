@@ -826,6 +826,12 @@ i_edit(void) {
 				if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
 					if(commkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					commkeys[i].func(&(commkeys[i].arg));
+
+					if(i+1 < LENGTH(commkeys)) { // FIXME: Compare the exact tests to be the same
+						if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && LENGTH(commkeys[i].test) == LENGTH(commkeys[i+1].test) && i_dotests(commkeys[i+1].test))
+							continue;
+					}
+
 					break;
 				}
 			}
