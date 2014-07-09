@@ -92,6 +92,7 @@ static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 { .keyv.i = KEY_RIGHT,      { 0,     0,    0,   0 },   f_moveboth, { .m = m_nextchar } },
 { .keyv.i = KEY_SLEFT,      { 0,     0,    0,   0 },   f_moveboth, { .m = m_prevword } },
 { .keyv.i = KEY_SRIGHT,     { 0,     0,    0,   0 },   f_moveboth, { .m = m_nextword } },
+//{ .keyv.i = KEY_ESC,        { t_nocomm,0,   0,   0 },   f_toggle,   { .i = S_Command  } },
 };
 
 static const Key stdkeys[] = {
@@ -146,7 +147,7 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('X'), { t_mod, t_rw, 0,   0 },  f_save,      { 0 } },
 { .keyv.c = CONTROL('X'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
 { .keyv.c = META('x'),    { 0,     0,    0,   0 },  f_spawn,     CMD_P },
-{ .keyv.c = CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipenull,  FROMCLIP },
+//{ .keyv.c = CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipenull,  FROMCLIP },
 { .keyv.c = CONTROL('Z'), { 0     ,0,    0,   0 },  f_suspend,   { 0 } },
 { .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 { .keyv.c = CONTROL('\\'),{ t_rw,  0,    0,   0 },  f_spawn,     PIPE },
@@ -160,6 +161,13 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('?'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
 { .keyv.c = META(','),    { 0,     0,    0,   0 },  f_move,      { .m = m_bof } },
 { .keyv.c = META('.'),    { 0,     0,    0,   0 },  f_move,      { .m = m_eof } },
+{ .keyv.c = CONTROL('Y'), { t_nocomm,0,  0,   0 },  f_toggle,    { .i = S_Command  } },
+};
+
+static const Key commkeys[] = { /* Command mode keys here */
+/* keyv.c,                  tests,                     func,       arg */
+{ .keyv.c = { 'i' },            { 0,     0,    0,   0 },   f_toggle,   { .i = S_Command  } },
+{ .keyv.c = { ':' },            { 0,     0,    0,   0 },   f_spawn,    CMD_P },
 };
 
 #if HANDLE_MOUSE

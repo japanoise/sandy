@@ -137,6 +137,9 @@ enum { /* To use in statusflags */
 	S_GroupUndo  = 1<<9,  /* Last action was an insert, so another insert should group with it, set automatically */
 	S_AutoIndent = 1<<10, /* Perform autoindenting on RET */
 	S_DumpStdout = 1<<11, /* Dump to stdout instead of writing to a file */
+//#if COMMAND_MODE
+	S_Command    = 1<<12, /* Command mode */
+//#endif
 };
 
 enum { /* To use in Undo.flags */
@@ -243,8 +246,10 @@ static bool           i_writefile(char*);
 /* t_* functions to know whether to process an action or keybinding */
 static bool t_ai(void);
 static bool t_bol(void);
+//static bool t_comm(void);
 static bool t_eol(void);
 static bool t_mod(void);
+static bool t_nocomm(void);
 static bool t_rw(void);
 static bool t_redo(void);
 static bool t_sel(void);
@@ -816,8 +821,21 @@ i_edit(void) {
 			continue;
 		}
 		statusflags&=~(S_InsEsc);
+//#if COMMAND_MODE
+		if(t_rw() && t_nocomm()) f_insert(&(const Arg){ .v = c });
+/*#else
 		if(t_rw()) f_insert(&(const Arg){ .v = c });
-		else tmptitle="WARNING! File is read-only!!!";
+#endif*/
+		else if(!t_rw()) tmptitle="WARNING! File is read-only!!!";
+		else {
+			for(i=0; i<LENGTH(commkeys); i++) {
+				if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
+					if(commkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
+					commkeys[i].func(&(commkeys[i].arg));
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -1438,7 +1456,8 @@ i_update(void) {
 	else {
 		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
-		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
+		snprintf(title, BUFSIZ, "%s %s [%s]%s%s%s%s %ld,%d  %s",
+			(t_nocomm()?"Insert":"Command"),
 			(statusflags&S_DumpStdout?"<Stdout>":(filename == NULL?"<No file>":filename)),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
 			(t_mod()?"[+]":""),
@@ -1675,6 +1694,11 @@ t_bol(void) {
 	return (fcur.o == 0);
 }
 
+//bool /* TRUE if we are in command mode */
+//t_comm(void) {
+//	return (statusflags & S_Command);
+//}
+
 bool /* TRUE at end of line */
 t_eol(void) {
 	return (fcur.o == fcur.l->len);
@@ -1683,6 +1707,11 @@ t_eol(void) {
 bool /* TRUE if the file has been modified */
 t_mod(void) {
 	return (statusflags & S_Modified);
+}
+
+bool /* TRUE if we are not in command mode FIXME: Find a way to use t_comm */
+t_nocomm(void) {
+	return !(statusflags & S_Command);
 }
 
 bool /* TRUE if the file is writable */
@@ -1742,7 +1771,7 @@ main(int argc, char **argv){
 			i++;
 			break;
 		} else if(!strcmp(argv[i], "-v"))
-			i_die("sandy-"VERSION", © 2011 sandy engineers, see LICENSE for details\n");
+			i_die("sandy-"VERSION", © 2014 sandy engineers, see LICENSE for details\n");
 		else
 			i_usage();
 	}
