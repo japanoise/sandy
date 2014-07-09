@@ -142,6 +142,7 @@ static const Key stdkeys[] = {
 #if VIM_BINDINGS
 { .keyv.c = CONTROL('['), { t_nocomm,0,  0,   0 },  f_toggle,    { .i = S_Command  } },
 #endif
+{ .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  0,           { 0  } },
 { .keyv.c = CONTROL('\\'),{ t_rw,  0,    0,   0 },  f_spawn,     PIPE },
 { .keyv.c = META('\\'),   { t_rw,  0,    0,   0 },  f_spawn,     SED },
 { .keyv.c = CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault } },
@@ -153,11 +154,17 @@ static const Key stdkeys[] = {
 };
 
 #if VIM_BINDINGS
+/* In order for a key to execute more than 1 function, add consecutive definitions of the key
+   with the exact same tests */
+
 static const Key commkeys[] = { /* Command mode keys here */
 /* keyv.c,                  tests,                     func,       arg */
+{ .keyv.c = { '$' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_eol } },
+{ .keyv.c = { '^' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_bol } },
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextchar } },
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command  } },
 { .keyv.c = { 'b' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_prevword } },
+{ .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_delete,    { .i = 0 } },
 { .keyv.c = { 'g' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_bof } },
 { .keyv.c = { 'G' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_eof } },
 { .keyv.c = { 'i' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command  } },
@@ -191,7 +198,6 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { ' ' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextchar } },
 /* TODO: Keybindings left:
  * numbers and arrows do various things (ex. 5s delete the next 5 chars) (adj)
- * $ until eol (adj)
  * ^ until bol (adj)
  * q record macro (?)
  * w/W go to next word (adj)
@@ -200,7 +206,6 @@ static const Key commkeys[] = { /* Command mode keys here */
  * t/T do until char (adj)
  * y yank things (verb)
  * {/} start/end of paragraph (?)
- * d delete/cut things (verb)
  * hjkl movement (adj)
  * c replace things (verb)
  * v visual mode. may not be implemented.
