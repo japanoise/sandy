@@ -73,7 +73,8 @@ static void f_pipenull(const Arg*);
 
 static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 /* keyv.i,                  tests,                     func,       arg */
-{ .keyv.i = KEY_BACKSPACE,  { t_rw,  0,    0,   0 },   f_delete,   { .m = m_prevchar } },
+{ .keyv.i = KEY_BACKSPACE,  { t_rw,  t_nocomm,0,0 },   f_delete,   { .m = m_prevchar } },
+{ .keyv.i = KEY_BACKSPACE,  { 0,     0,    0,   0 },   f_moveboth, { .m = m_prevchar } },
 { .keyv.i = KEY_DC,         { t_sel, t_rw, 0,   0 },   f_delete,   { .m = m_tosel    } },
 { .keyv.i = KEY_DC,         { t_rw,  0,    0,   0 },   f_delete,   { .m = m_nextchar } },
 { .keyv.i = KEY_SDC,        { t_sel, t_rw, 0,   0 },   f_delete,   { .m = m_tosel } },
@@ -118,8 +119,8 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('H'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
 { .keyv.c = CONTROL('I'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\t" } },
 { .keyv.c = CONTROL('J'), { t_rw,  t_ai, 0,   0 },  f_pipeai,    AUTOINDENT } ,
-{ .keyv.c = CONTROL('J'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
-{ .keyv.c = CONTROL('J'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline } },
+{ .keyv.c = CONTROL('J'), { t_rw,  t_nocomm,0,0 },  f_insert,    { .v = "\n" } },
+{ .keyv.c = CONTROL('J'), { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextline } },
 { .keyv.c = CONTROL('K'), { t_eol, t_rw, 0,   0 },  f_delete,    { .m = m_nextchar } },
 { .keyv.c = CONTROL('K'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol } },
 { .keyv.c = CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0 } },
@@ -131,11 +132,11 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('O'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_tosel } }, /* Swap fsel and fcur */
 { .keyv.c = CONTROL('P'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevline } },
 { .keyv.c = CONTROL('Q'), { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_InsEsc } },
-{ .keyv.c = CONTROL('R'), { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
-{ .keyv.c = CONTROL('R'), { 0,     0,    0,   0 },  f_spawn,     FINDBW },
+//{ .keyv.c = CONTROL('R'), { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
+//{ .keyv.c = CONTROL('R'), { 0,     0,    0,   0 },  f_spawn,     FINDBW },
+{ .keyv.c = CONTROL('R'), { t_redo,t_rw, 0,   0 },  f_undo,      { .i = -1 } },
 { .keyv.c = META('r'),    { 0,     0,    0,   0 },  f_findbw,    { 0 } },
 { .keyv.c = CONTROL('S'), { t_sel, 0,    0,   0 },  f_findfw,    { 0 } },
-{ .keyv.c = CONTROL('S'), { 0,     0,    0,   0 },  f_spawn,     FIND },
 { .keyv.c = META('s'),    { 0,     0,    0,   0 },  f_findfw,    { 0 } },
 { .keyv.c = CONTROL('T'), { 0,     0,    0,   0 },  f_pipero ,   TOCLIP },
 { .keyv.c = CONTROL('U'), { t_bol, t_rw, 0,   0 },  f_delete,    { .m = m_prevchar } },
@@ -144,9 +145,6 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('V'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevscr } },
 { .keyv.c = META('v'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextscr } },
 { .keyv.c = CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword } },
-{ .keyv.c = CONTROL('X'), { t_mod, t_rw, 0,   0 },  f_save,      { 0 } },
-{ .keyv.c = CONTROL('X'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
-{ .keyv.c = META('x'),    { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 { .keyv.c = CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipenull,  FROMCLIP },
 { .keyv.c = CONTROL('Z'), { 0     ,0,    0,   0 },  f_suspend,   { 0 } },
 #if VIM_BINDINGS
@@ -155,11 +153,8 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('\\'),{ t_rw,  0,    0,   0 },  f_spawn,     PIPE },
 { .keyv.c = META('\\'),   { t_rw,  0,    0,   0 },  f_spawn,     SED },
 { .keyv.c = CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault } },
-{ .keyv.c = CONTROL('^'), { t_redo,t_rw, 0,   0 },  f_undo,      { .i = -1 } },
-{ .keyv.c = CONTROL('^'), { t_rw,  0,    0,   0 },  f_repeat,    { 0 } },
 { .keyv.c = META('6'),    { t_rw,  0,    0,   0 },  f_pipeline,  { .v = "tr '\n' ' '" } }, /* Join lines */
 { .keyv.c = META('5'),    { t_sel, t_rw, 0,   0 },  f_spawn,     REPLACE },
-{ .keyv.c = CONTROL('_'), { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1 } },
 { .keyv.c = CONTROL('?'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
 { .keyv.c = META(','),    { 0,     0,    0,   0 },  f_move,      { .m = m_bof } },
 { .keyv.c = META('.'),    { 0,     0,    0,   0 },  f_move,      { .m = m_eof } },
@@ -168,8 +163,21 @@ static const Key stdkeys[] = {
 #if VIM_BINDINGS
 static const Key commkeys[] = { /* Command mode keys here */
 /* keyv.c,                  tests,                     func,       arg */
-{ .keyv.c = { 'i' },            { 0,     0,    0,   0 },   f_toggle,   { .i = S_Command  } },
-{ .keyv.c = { ':' },            { 0,     0,    0,   0 },   f_spawn,    CMD_P },
+{ .keyv.c = { 'b' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_prevword } },
+{ .keyv.c = { 'i' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command  } },
+{ .keyv.c = { 'n' },      { t_sel, 0,    0,   0 },  f_findfw,    { 0 } },
+{ .keyv.c = { 'N' },      { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
+// TODO: Find a non-complex way to insert line above and beneath
+{ .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
+{ .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
+{ .keyv.c = { 'u' },      { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1 } },
+{ .keyv.c = { 'w' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextword } },
+{ .keyv.c = { 'x' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel    } },
+{ .keyv.c = { 'x' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextchar } },
+{ .keyv.c = { ':' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P },
+{ .keyv.c = { '/' },      { 0,     0,    0,   0 },  f_spawn,     FIND },
+{ .keyv.c = { '.' },      { t_rw,  0,    0,   0 },  f_repeat,    { 0 } },
+{ .keyv.c = { ' ' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextchar } },
 };
 #endif
 
@@ -373,4 +381,3 @@ f_pipenull(const Arg *arg) {
 	fsel=fcur;
 	f_pipe(arg);
 }
-

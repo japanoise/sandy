@@ -818,13 +818,10 @@ i_edit(void) {
 			continue;
 		}
 		statusflags&=~(S_InsEsc);
+
 #if VIM_BINDINGS
 		if(t_rw() && t_nocomm()) f_insert(&(const Arg){ .v = c });
-#else
-		if(t_rw()) f_insert(&(const Arg){ .v = c });
-#endif
-		else if(!t_rw()) tmptitle="WARNING! File is read-only!!!";
-		else {
+		else if(statusflags & S_Command) {
 			for(i=0; i<LENGTH(commkeys); i++) {
 				if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
 					if(commkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
@@ -833,6 +830,11 @@ i_edit(void) {
 				}
 			}
 		}
+#else
+		if(t_rw()) f_insert(&(const Arg){ .v = c });
+#endif
+		else tmptitle="WARNING! File is read-only!!!";
+		
 	}
 }
 
@@ -1685,6 +1687,7 @@ m_tosel(Filepos pos) {
 
 /* T_* FUNCTIONS
 	Used to test for conditions, take no arguments and return bool. */
+
 bool /* TRUE is autoindent is on */
 t_ai(void) {
 	return (statusflags & S_AutoIndent);
@@ -1705,12 +1708,14 @@ t_mod(void) {
 	return (statusflags & S_Modified);
 }
 
-#if VIM_BINDINGS
 bool /* TRUE if we are not in command mode */
 t_nocomm(void) {
+#if VIM_BINDINGS
 	return !(statusflags & S_Command);
-}
+#else
+	return TRUE;
 #endif
+}
 
 bool /* TRUE if the file is writable */
 t_rw(void) {
@@ -1746,6 +1751,7 @@ main(int argc, char **argv){
 	/* Use system locale, hopefully UTF-8 */
 	setlocale(LC_ALL,"");
 	statusflags|=S_Command;
+	ESCDELAY=0; // FIXME: Change this to something else to support num keys?
 
 	for(i = 1; i < argc && argv[i][0] == '-' && argv[i][1] != '\0'; i++) {
 		if(!strcmp(argv[i], "-r")) {

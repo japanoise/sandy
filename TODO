@@ -9,6 +9,7 @@ In no particular order, at sandy.c:
 - Improve regex search (backwards!!)
 - Improve syntax highlight, multiline?
 - Group delete undos?
+- Show line numbers
 
 At config.def.h:
 - Bindings!
