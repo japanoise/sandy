@@ -137,9 +137,7 @@ enum { /* To use in statusflags */
 	S_GroupUndo  = 1<<9,  /* Last action was an insert, so another insert should group with it, set automatically */
 	S_AutoIndent = 1<<10, /* Perform autoindenting on RET */
 	S_DumpStdout = 1<<11, /* Dump to stdout instead of writing to a file */
-//#if COMMAND_MODE
 	S_Command    = 1<<12, /* Command mode */
-//#endif
 };
 
 enum { /* To use in Undo.flags */
@@ -246,7 +244,6 @@ static bool           i_writefile(char*);
 /* t_* functions to know whether to process an action or keybinding */
 static bool t_ai(void);
 static bool t_bol(void);
-//static bool t_comm(void);
 static bool t_eol(void);
 static bool t_mod(void);
 static bool t_nocomm(void);
@@ -821,11 +818,11 @@ i_edit(void) {
 			continue;
 		}
 		statusflags&=~(S_InsEsc);
-//#if COMMAND_MODE
+#if VIM_BINDINGS
 		if(t_rw() && t_nocomm()) f_insert(&(const Arg){ .v = c });
-/*#else
+#else
 		if(t_rw()) f_insert(&(const Arg){ .v = c });
-#endif*/
+#endif
 		else if(!t_rw()) tmptitle="WARNING! File is read-only!!!";
 		else {
 			for(i=0; i<LENGTH(commkeys); i++) {
@@ -1456,8 +1453,12 @@ i_update(void) {
 	else {
 		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
+#if VIM_BINDINGS
 		snprintf(title, BUFSIZ, "%s %s [%s]%s%s%s%s %ld,%d  %s",
 			(t_nocomm()?"Insert":"Command"),
+#else
+		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
+#endif
 			(statusflags&S_DumpStdout?"<Stdout>":(filename == NULL?"<No file>":filename)),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
 			(t_mod()?"[+]":""),
@@ -1694,11 +1695,6 @@ t_bol(void) {
 	return (fcur.o == 0);
 }
 
-//bool /* TRUE if we are in command mode */
-//t_comm(void) {
-//	return (statusflags & S_Command);
-//}
-
 bool /* TRUE at end of line */
 t_eol(void) {
 	return (fcur.o == fcur.l->len);
@@ -1709,10 +1705,12 @@ t_mod(void) {
 	return (statusflags & S_Modified);
 }
 
-bool /* TRUE if we are not in command mode FIXME: Find a way to use t_comm */
+#if VIM_BINDINGS
+bool /* TRUE if we are not in command mode */
 t_nocomm(void) {
 	return !(statusflags & S_Command);
 }
+#endif
 
 bool /* TRUE if the file is writable */
 t_rw(void) {
@@ -1747,6 +1745,7 @@ main(int argc, char **argv){
 
 	/* Use system locale, hopefully UTF-8 */
 	setlocale(LC_ALL,"");
+	statusflags|=S_Command;
 
 	for(i = 1; i < argc && argv[i][0] == '-' && argv[i][1] != '\0'; i++) {
 		if(!strcmp(argv[i], "-r")) {
