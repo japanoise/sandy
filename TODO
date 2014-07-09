@@ -10,6 +10,7 @@ In no particular order, at sandy.c:
 - Improve syntax highlight, multiline?
 - Group delete undos?
 - Show line numbers
+- Show some documentation when you press tab in command mode
 
 At config.def.h:
 - Bindings!

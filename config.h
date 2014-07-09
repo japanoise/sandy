@@ -98,13 +98,6 @@ static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 
 static const Key stdkeys[] = {
 /* keyv.c,                test,                     func,        arg */
-{ .keyv.c = CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
-{ .keyv.c = META(' '),    { 0,     0,    0,   0 },  f_mark,      { 0 } },
-{ .keyv.c = META('`'),    { 0,     0,    0,   0 },  f_mark,      { 0 } },
-{ .keyv.c = CONTROL('A'), { t_ai,  0,    0,   0 },  f_move,      { .m = m_smartbol } },
-{ .keyv.c = CONTROL('A'), { 0,     0,    0,   0 },  f_move,      { .m = m_bol } },
-{ .keyv.c = CONTROL('B'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar } },
-{ .keyv.c = META('b'),    { 0,     0,    0,   0 },  f_move,      { .m = m_prevword } },
 { .keyv.c = CONTROL('C'), { t_warn,t_mod,0,   0 },  f_toggle,    { .i = S_Running } },
 { .keyv.c = CONTROL('C'), { t_mod, 0,    0,   0 },  f_toggle,    { .i = S_Warned } },
 { .keyv.c = CONTROL('C'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
@@ -117,7 +110,7 @@ static const Key stdkeys[] = {
 { .keyv.c = META('f'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextword } },
 { .keyv.c = CONTROL('G'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_stay } },
 { .keyv.c = CONTROL('H'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
-{ .keyv.c = CONTROL('I'), { t_rw,  0,    0,   0 },  f_insert,    { .v = "\t" } },
+{ .keyv.c = CONTROL('I'), { t_rw,  t_nocomm,0,0 },  f_insert,    { .v = "\t" } },
 { .keyv.c = CONTROL('J'), { t_rw,  t_ai, 0,   0 },  f_pipeai,    AUTOINDENT } ,
 { .keyv.c = CONTROL('J'), { t_rw,  t_nocomm,0,0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = CONTROL('J'), { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextline } },
@@ -145,7 +138,6 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('V'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevscr } },
 { .keyv.c = META('v'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextscr } },
 { .keyv.c = CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword } },
-{ .keyv.c = CONTROL('Y'), { t_rw,  0,    0,   0 },  f_pipenull,  FROMCLIP },
 { .keyv.c = CONTROL('Z'), { 0     ,0,    0,   0 },  f_suspend,   { 0 } },
 #if VIM_BINDINGS
 { .keyv.c = CONTROL('['), { t_nocomm,0,  0,   0 },  f_toggle,    { .i = S_Command  } },
@@ -164,20 +156,51 @@ static const Key stdkeys[] = {
 static const Key commkeys[] = { /* Command mode keys here */
 /* keyv.c,                  tests,                     func,       arg */
 { .keyv.c = { 'b' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_prevword } },
+{ .keyv.c = { 'g' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_bof } },
+{ .keyv.c = { 'G' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_eof } },
 { .keyv.c = { 'i' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command  } },
+{ .keyv.c = { 'm' },      { 0,     0,    0,   0 },  f_mark,      { 0 } },
 { .keyv.c = { 'n' },      { t_sel, 0,    0,   0 },  f_findfw,    { 0 } },
 { .keyv.c = { 'N' },      { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
 // TODO: Find a non-complex way to insert line above and beneath
 { .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
+// TODO: add P support
+{ .keyv.c = { 'p' },      { t_rw,  0,    0,   0 },  f_pipenull,  FROMCLIP },
 { .keyv.c = { 'u' },      { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1 } },
 { .keyv.c = { 'w' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextword } },
 { .keyv.c = { 'x' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel    } },
 { .keyv.c = { 'x' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextchar } },
+{ .keyv.c = { 'X' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel    } },
+{ .keyv.c = { 'X' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar } },
+{ .keyv.c = { ';' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 { .keyv.c = { ':' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P },
-{ .keyv.c = { '/' },      { 0,     0,    0,   0 },  f_spawn,     FIND },
+{ .keyv.c = { '\'' },      { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { .keyv.c = { '.' },      { t_rw,  0,    0,   0 },  f_repeat,    { 0 } },
+{ .keyv.c = { '/' },      { 0,     0,    0,   0 },  f_spawn,     FIND },
 { .keyv.c = { ' ' },      { 0,     0,    0,   0 },  f_moveboth,  { .m = m_nextchar } },
+/* TODO: Keybindings left:
+ * numbers and arrows do various things (ex. 5s delete the next 5 chars) (adj)
+ * $ until eol (adj)
+ * ^ until bol (adj)
+ * q record macro (?)
+ * w/W go to next word (adj)
+ * e/E go to the end of the word (adj)
+ * r replace char (verb)
+ * t/T do until char (adj)
+ * y yank things (verb)
+ * {/} start/end of paragraph (?)
+ * a insert mode in next char
+ * s delete char and insert mode
+ * d delete/cut things (verb)
+ * hjkl movement (adj)
+ * c replace things (verb)
+ * v visual mode. may not be implemented.
+ * b go to previous word (adj)
+ * m set mark (verb)
+ * ' go to mark (verb) and (adj)
+ * </> ident
+ */
 };
 #endif
 
