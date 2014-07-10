@@ -760,7 +760,7 @@ i_edit(void) {
 	char c[7];
 	fd_set fds;
 	Filepos oldsel, oldcur;
-	Arg *param = { 0 };
+	Arg param = { 0 };
 
 	oldsel.l=oldcur.l=fstline;
 	oldsel.o=oldcur.o=0;
@@ -863,56 +863,63 @@ i_edit(void) {
 					statusflags|=S_Multiply;
 					multiply=(int)ch-'0';
 				}
-			} else
-				for(i=0; i<LENGTH(commkeys); i++) {
-					if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
+			} else for(i=0; i<LENGTH(commkeys); i++) {
+				if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
+					if(commkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 
-						// FIXME: Find a better way to tell if a verb or parameter command
-						if(!t_sent() && commkeys[i].arg.i == 0) {
-							statusflags|=(long)S_Sentence;
-							verb=commkeys[i].func;
-							break;
+					/* Handle sentences */
+					// FIXME: Find a better way to tell if a func is a verb or parameter
+					if(t_sent()) {
+						if(commkeys[i].func == verb) {
+							param.m=m_nextline;
+							verb(&param);
 						}
 
-						if(!t_sent() && commkeys[i].arg.m == 0) {
-							statusflags|=(long)S_Parameter;
-							verb=commkeys[i].func;
-							break;
-						}
-						
-						if(statusflags & S_Parameter) {
-							statusflags&=~S_Parameter;
-							param->v=c;
-							verb(param);
-							break;
-						}
-
-						if(t_sent() && commkeys[i].func != f_adjective) {
+						if(commkeys[i].func != f_adjective) {
 							statusflags&=~S_Sentence;
 							break;
 						}
-
-						if(commkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
-
-						// FIXME: Some weird thing can be executed (example: 5a or 0a which does nothing)
-						if(statusflags & S_Multiply) {
-							for(j=0; j<multiply; j++)
-								commkeys[i].func(&(commkeys[i].arg));
-
-							statusflags&=~S_Multiply;
-							multiply=1;
-						} else
-							commkeys[i].func(&(commkeys[i].arg));
-
-						// FIXME: Compare the exact tests to be the same
-						if(i+1 < LENGTH(commkeys)) {
-							if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && LENGTH(commkeys[i].test) == LENGTH(commkeys[i+1].test) && i_dotests(commkeys[i+1].test))
-								continue;
-						}
-
+					} else if(commkeys[i].arg.i == 0) {
+						statusflags|=(long)S_Sentence;
+						verb=commkeys[i].func;
 						break;
 					}
+
+					/* Handle parameter sentences (verb is used here to define the command to execute) */
+					if(statusflags & S_Parameter) {
+						statusflags&=~S_Parameter;
+						param.v=c;
+						verb(&param);
+						break;
+					} else if(commkeys[i].arg.m == 0) {
+						statusflags|=(long)S_Parameter;
+						verb=commkeys[i].func;
+						break;
+					}
+
+
+					/* Handle multiplication */
+					// FIXME: Some weird thing can be executed (example: 5a or 0a which does nothing)
+					if(statusflags & S_Multiply) {
+						for(j=0; j<multiply; j++)
+							commkeys[i].func(&(commkeys[i].arg));
+
+						statusflags&=~S_Multiply;
+						multiply=1;
+					} else
+						commkeys[i].func(&(commkeys[i].arg));
+
+					/* Handle multi-function commands */
+					// FIXME: Compare the exact tests to be the same and not the length & validity
+					// TODO: Find a way to handle multi-function verbs
+					if(i+1 < LENGTH(commkeys)) {
+						if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && LENGTH(commkeys[i].test) == LENGTH(commkeys[i+1].test) && i_dotests(commkeys[i+1].test))
+							continue;
+					}
+
+					break;
 				}
+			}
 		}
 #else
 		if(t_rw()) f_insert(&(const Arg){ .v = c });

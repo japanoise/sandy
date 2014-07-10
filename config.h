@@ -171,14 +171,13 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'm' },      { 0,     0,    0,   0 },  f_mark,      { 0 } },
 { .keyv.c = { 'n' },      { t_sel, 0,    0,   0 },  f_findfw,    { 0 } },
 { .keyv.c = { 'N' },      { t_sel, 0,    0,   0 },  f_findbw,    { 0 } },
-// TODO: Find a non-complex way to insert line above and beneath
 { .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_moveboth,  { .m = m_eol } },
 { .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command  } },
 { .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_moveboth,  { .m = m_bol } },
 { .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n" } },
 { .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command  } },
-// TODO: add P support
+// TODO: add better paste support and P
 { .keyv.c = { 'p' },      { t_rw,  0,    0,   0 },  f_pipenull,  FROMCLIP },
 { .keyv.c = { 's' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel    } },
 { .keyv.c = { 's' },      { t_sel, t_rw, 0,   0 },  f_toggle,    { .i = S_Command    } },
