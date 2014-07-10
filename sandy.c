@@ -232,6 +232,7 @@ static void           i_killundos(Undo**);
 static Line          *i_lineat(unsigned long);
 static unsigned long  i_lineno(Line*);
 static void           i_mouse(void);
+static void           i_multiply(void (*func)(const Arg *arg), const Arg arg);
 static void           i_pipetext(const char*);
 static void           i_readfifo(void);
 static void           i_readfile(char*);
@@ -756,7 +757,7 @@ i_dotests(bool (*const a[])(void)) {
 
 void /* Main editing loop */
 i_edit(void) {
-	int ch, i, j;
+	int ch, i;
 	char c[7];
 	fd_set fds;
 	Filepos oldsel, oldcur;
@@ -804,14 +805,18 @@ i_edit(void) {
 				if(ch == curskeys[i].keyv.i && i_dotests(curskeys[i].test) ) {
 
 #if VIM_BINDINGS
-					if(statusflags & S_Sentence && curskeys[i].func != f_adjective) {
-						statusflags&=~S_Sentence;
-						break;
+					if(t_sent()) {
+						if(curskeys[i].func == verb) i_multiply(verb, (const Arg){ .m = m_nextline });
+
+						if(curskeys[i].func != f_adjective) {
+							statusflags&=~S_Sentence;
+							break;
+						}
 					}
 #endif
 
 					if(curskeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
-					curskeys[i].func(&(curskeys[i].arg));
+					i_multiply(curskeys[i].func, curskeys[i].arg);
 					break;
 				}
 			}
@@ -835,15 +840,18 @@ i_edit(void) {
 				if(memcmp(c, stdkeys[i].keyv.c, sizeof stdkeys[i].keyv.c) == 0 && i_dotests(stdkeys[i].test) ) {
 
 #if VIM_BINDINGS
-					if(statusflags & S_Sentence && stdkeys[i].func != f_adjective) {
-						statusflags&=~S_Sentence;
-						break;
+					if(t_sent()) {
+						if(stdkeys[i].func == verb) i_multiply(verb, (const Arg){ .m = m_nextline });
+
+						if(stdkeys[i].func != f_adjective) {
+							statusflags&=~S_Sentence;
+							break;
+						}
 					}
 #endif
 
-
 					if(stdkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
-					stdkeys[i].func(&(stdkeys[i].arg));
+					i_multiply(stdkeys[i].func, stdkeys[i].arg);
 					break;
 				}
 			}
@@ -869,8 +877,7 @@ i_edit(void) {
 					/* Handle sentences */
 					// FIXME: Find a better way to tell if a func is a verb or parameter
 					if(t_sent()) {
-						if(commkeys[i].func == verb)
-							verb(&(const Arg){ .m = m_nextline });
+						if(commkeys[i].func == verb) i_multiply(verb, (const Arg){ .m = m_nextline });
 
 						if(commkeys[i].func != f_adjective) {
 							statusflags&=~S_Sentence;
@@ -885,7 +892,7 @@ i_edit(void) {
 					/* Handle parameter sentences (verb is used here to define the command to execute) */
 					if(statusflags & S_Parameter) {
 						statusflags&=~S_Parameter;
-						verb(&(const Arg){ .v = c });
+						i_multiply(verb, (const Arg){ .v = c });
 						break;
 					} else if(commkeys[i].arg.m == 0) {
 						statusflags|=(long)S_Parameter;
@@ -894,16 +901,7 @@ i_edit(void) {
 					}
 
 
-					/* Handle multiplication */
-					// FIXME: Some weird thing can be executed (example: 5a or 0a which does nothing)
-					if(statusflags & S_Multiply) {
-						for(j=0; j<multiply; j++)
-							commkeys[i].func(&(commkeys[i].arg));
-
-						statusflags&=~S_Multiply;
-						multiply=1;
-					} else
-						commkeys[i].func(&(commkeys[i].arg));
+					i_multiply(commkeys[i].func, commkeys[i].arg);
 
 					/* Handle multi-function commands */
 					// FIXME: Compare the exact tests to be the same and not the length & validity
@@ -1033,6 +1031,21 @@ i_mouse(void) {
 		}
 }
 #endif /* HANDLE_MOUSE */
+
+// FIXME: Some weird thing can be executed (example: 5a or 0a which does nothing)
+void /* Handle multiplication */
+i_multiply(void (*func)(const Arg *arg), const Arg arg) {
+	int i;
+
+	if(statusflags & S_Multiply) {
+		for(i=0; i<multiply; i++)
+			func(&arg);
+
+		statusflags&=~S_Multiply;
+		multiply=1;
+	} else
+		func(&arg);
+}
 
 void /* Pipe text between fsel and fcur through cmd */
 i_pipetext(const char *cmd) {

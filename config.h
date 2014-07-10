@@ -90,6 +90,7 @@ static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 { .keyv.i = KEY_NPAGE,      { 0,     0,    0,   0 },   f_moveboth,  { .m = m_nextscr  } },
 { .keyv.i = KEY_UP,         { t_sent,0,    0,   0 },   f_adjective, { .m = m_prevline } },
 { .keyv.i = KEY_UP,         { 0,     0,    0,   0 },   f_moveboth,  { .m = m_prevline } },
+// FIXME: Does not actually act to next line
 { .keyv.i = KEY_DOWN,       { t_sent,0,    0,   0 },   f_adjective, { .m = m_nextline } },
 { .keyv.i = KEY_DOWN,       { 0,     0,    0,   0 },   f_moveboth,  { .m = m_nextline } },
 { .keyv.i = KEY_LEFT,       { t_sent,0,    0,   0 },   f_adjective, { .m = m_prevchar } },
