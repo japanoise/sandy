@@ -760,7 +760,6 @@ i_edit(void) {
 	char c[7];
 	fd_set fds;
 	Filepos oldsel, oldcur;
-	Arg param = { 0 };
 
 	oldsel.l=oldcur.l=fstline;
 	oldsel.o=oldcur.o=0;
@@ -855,7 +854,7 @@ i_edit(void) {
 #if VIM_BINDINGS
 		if(t_rw() && t_nocomm()) f_insert(&(const Arg){ .v = c });
 		else if(!t_nocomm()) {
-			if(ch >= '0' && ch <= '9') {
+			if(ch >= '0' && ch <= '9' && !(statusflags & S_Parameter)) {
 				if(statusflags & S_Multiply) {
 					multiply*=10;
 					multiply+=(int)ch-'0';
@@ -870,10 +869,8 @@ i_edit(void) {
 					/* Handle sentences */
 					// FIXME: Find a better way to tell if a func is a verb or parameter
 					if(t_sent()) {
-						if(commkeys[i].func == verb) {
-							param.m=m_nextline;
-							verb(&param);
-						}
+						if(commkeys[i].func == verb)
+							verb(&(const Arg){ .m = m_nextline });
 
 						if(commkeys[i].func != f_adjective) {
 							statusflags&=~S_Sentence;
@@ -888,8 +885,7 @@ i_edit(void) {
 					/* Handle parameter sentences (verb is used here to define the command to execute) */
 					if(statusflags & S_Parameter) {
 						statusflags&=~S_Parameter;
-						param.v=c;
-						verb(&param);
+						verb(&(const Arg){ .v = c });
 						break;
 					} else if(commkeys[i].arg.m == 0) {
 						statusflags|=(long)S_Parameter;
