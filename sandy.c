@@ -139,6 +139,7 @@ enum { /* To use in statusflags */
 	S_DumpStdout = 1<<11, /* Dump to stdout instead of writing to a file */
 	S_Command    = 1<<12, /* Command mode */
 	S_Sentence   = 1<<13, /* Sentence mode (A verb was pressed and an adjective should be pressed) */
+	S_Multiply   = 1<<14, /* Multiply mode. Replay a command x times */
 };
 
 enum { /* To use in Undo.flags */
@@ -181,15 +182,12 @@ static Undo     *redos;                             /* Redo ring */
 static int       textattrs[LastFG][LastBG];         /* Text attributes for each color pair */
 static int       savestep=0;                        /* Index to determine the need to save in undo/redo action */
 static int       fifofd;                            /* Command fifo file descriptor */
-#if VIM_BINDINGS
 static long      statusflags=S_Running | S_Command; /* Status flags, very important, OR'd (see enums above) */
-#else
-static long      statusflags=S_Running;             /* Status flags, very important, OR'd (see enums above) */
-#endif
 static int       lastaction=LastNone;               /* The last action we took (see enums above) */
 static int       cols, lines;                       /* Ncurses: to use instead of COLS and LINES, wise */
 static mmask_t   defmmask = 0;                      /* Ncurses: mouse event mask */
 static void    (*verb)(const Arg *arg);             /* Verb of current sentence */
+static int       multiply = 1;                          /* Times to replay a command */
 
 /* Functions */
 /* f_* functions can be linked to an action or keybinding */
@@ -757,7 +755,7 @@ i_dotests(bool (*const a[])(void)) {
 
 void /* Main editing loop */
 i_edit(void) {
-	int ch, i;
+	int ch, i, j;
 	char c[7];
 	fd_set fds;
 	Filepos oldsel, oldcur;
@@ -854,32 +852,51 @@ i_edit(void) {
 
 #if VIM_BINDINGS
 		if(t_rw() && t_nocomm()) f_insert(&(const Arg){ .v = c });
-		else if(statusflags & S_Command) {
-			for(i=0; i<LENGTH(commkeys); i++) {
-				if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
-
-					if(!(statusflags & S_Sentence) && commkeys[i].arg.i == 0) {
-						statusflags|=(long)S_Sentence;
-						verb=commkeys[i].func;
-						break;
-					}
-
-					if(statusflags & S_Sentence && commkeys[i].func != f_adjective) {
-						statusflags&=~S_Sentence;
-						break;
-					}
-
-					if(commkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
-					commkeys[i].func(&(commkeys[i].arg));
-
-					if(i+1 < LENGTH(commkeys)) { // FIXME: Compare the exact tests to be the same
-						if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && LENGTH(commkeys[i].test) == LENGTH(commkeys[i+1].test) && i_dotests(commkeys[i+1].test))
-							continue;
-					}
-
-					break;
+		else if(!t_nocomm()) {
+			if(ch >= '0' && ch <= '9') {
+				if(statusflags & S_Multiply) {
+					multiply*=10;
+					multiply+=(int)ch-'0';
+				} else {
+					statusflags|=S_Multiply;
+					multiply=(int)ch-'0';
 				}
-			}
+			} else
+				for(i=0; i<LENGTH(commkeys); i++) {
+					if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
+
+						if(!t_sent() && commkeys[i].arg.i == 0) {
+							statusflags|=(long)S_Sentence;
+							verb=commkeys[i].func;
+							break;
+						}
+
+						if(t_sent() && commkeys[i].func != f_adjective) {
+							statusflags&=~S_Sentence;
+							break;
+						}
+
+						if(commkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
+
+						// FIXME: Some weird thing can be executed (example: 5a)
+						if(statusflags & S_Multiply) {
+							for(j=0; j<multiply; j++)
+								commkeys[i].func(&(commkeys[i].arg));
+
+							statusflags&=~S_Multiply;
+							multiply=1;
+						} else
+							commkeys[i].func(&(commkeys[i].arg));
+
+
+						if(i+1 < LENGTH(commkeys)) { // FIXME: Compare the exact tests to be the same
+							if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && LENGTH(commkeys[i].test) == LENGTH(commkeys[i+1].test) && i_dotests(commkeys[i+1].test))
+								continue;
+						}
+
+						break;
+					}
+				}
 		}
 #else
 		if(t_rw()) f_insert(&(const Arg){ .v = c });

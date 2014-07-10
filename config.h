@@ -142,7 +142,7 @@ static const Key stdkeys[] = {
 #if VIM_BINDINGS
 { .keyv.c = CONTROL('['), { t_nocomm,0,  0,   0 },  f_toggle,    { .i = S_Command  } },
 #endif
-{ .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  0,           { 0  } },
+//{ .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  0,           { 0  } },
 { .keyv.c = CONTROL('\\'),{ t_rw,  0,    0,   0 },  f_spawn,     PIPE },
 { .keyv.c = META('\\'),   { t_rw,  0,    0,   0 },  f_spawn,     SED },
 { .keyv.c = CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault } },
