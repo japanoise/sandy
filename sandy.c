@@ -371,7 +371,7 @@ f_insert(const Arg *arg) {
 		i_addundo(TRUE, fcur, newcur, strdup((char*)arg->v));
 		if(fcur.l!=newcur.l) fsel=newcur;
 	}
-	fcur=newcur;
+	fcur=fsel=newcur;
 	statusflags|=(S_Modified|S_GroupUndo);
 	lastaction=LastInsert;
 }
@@ -551,7 +551,7 @@ f_undo(const Arg *arg) {
 			i_deltext(start, end);
 			fcur=fsel=start;
 		} else
-			fcur=i_addtext(u->str, fcur);
+			fcur=fsel=i_addtext(u->str, fcur);
 		if(isredo)
 			redos=u->prev, u->prev=undos, undos=u;
 		else
@@ -760,8 +760,9 @@ i_dotests(bool (*const a[])(void)) {
 
 void /* Main editing loop */
 i_edit(void) {
-	int ch, i;
+	int ch, i, j;
 	char c[7];
+	bool pass;
 	fd_set fds;
 	Filepos oldsel, oldcur;
 
@@ -903,15 +904,26 @@ i_edit(void) {
 						break;
 					}
 
-
 					i_multiply(commkeys[i].func, commkeys[i].arg);
 
 					/* Handle multi-function commands */
-					// FIXME: Compare the exact tests to be the same and not the length & validity
 					// TODO: Find a way to handle multi-function verbs
 					if(i+1 < LENGTH(commkeys)) {
-						if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && LENGTH(commkeys[i].test) == LENGTH(commkeys[i+1].test) && i_dotests(commkeys[i+1].test))
-							continue;
+						if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0) {
+							j=-1;
+							pass=TRUE;
+
+							while(1)
+								if(commkeys[i].test[++j]) {
+									if(commkeys[i].test[j] != commkeys[i+1].test[j]) {
+										pass=FALSE;
+										break;
+									}
+								} else break;
+
+							if(pass) continue;
+							else break;
+						}
 					}
 
 					break;
@@ -1041,6 +1053,7 @@ i_multiply(void (*func)(const Arg *arg), const Arg arg) {
 	int i;
 
 	if(statusflags & S_Multiply) {
+		//statusflags|=S_GroupUndo;
 		for(i=0; i<multiply; i++)
 			func(&arg);
 

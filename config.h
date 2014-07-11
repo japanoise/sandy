@@ -185,11 +185,19 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'm' },      { 0,     0,    0,   0 },  f_mark,      { 0                   } },
 { .keyv.c = { 'n' },      { t_sel, 0,    0,   0 },  f_findfw,    { 0                   } },
 { .keyv.c = { 'N' },      { t_sel, 0,    0,   0 },  f_findbw,    { 0                   } },
+{ .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_move,      { .m = m_eol          } },
+{ .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_pipeai,    { .v = AUTOINDENT     } },
+{ .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_move,      { .m = m_eol          } },
 { .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n"           } },
 { .keyv.c = { 'o' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command      } },
+{ .keyv.c = { 'O' },      { t_rw,  t_ai, 0,   0 },  f_move,      { .m = m_bol          } },
+{ .keyv.c = { 'O' },      { t_rw,  t_ai, 0,   0 },  f_pipeai,    { .v = AUTOINDENT     } },
+{ .keyv.c = { 'O' },      { t_rw,  t_ai, 0,   0 },  f_move,      { .m = m_prevline     } },
+{ .keyv.c = { 'O' },      { t_rw,  t_ai, 0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_move,      { .m = m_bol          } },
 { .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_insert,    { .v = "\n"           } },
+{ .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_move,      { .m = m_prevline     } },
 { .keyv.c = { 'O' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'p' },      { t_rw,  0,    0,   0 },  f_pipenull,  { .v = FROMCLIP       } },
 { .keyv.c = { 's' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
@@ -216,7 +224,6 @@ static const Key commkeys[] = { /* Command mode keys here */
  * r replace char (verb)
  * t/T do until char (adj)
  * i do inside (adj) (ex. diw deletes current word)
- * v visual mode. may not be implemented.
  * </> ident
  */
 };
@@ -403,7 +410,7 @@ f_pipeai(const Arg *arg) {
 	i_sortpos(&fsel, &fcur);
 	fsel.o=0;
 	f_pipe(arg);
-	fsel.l=fcur.l; fsel.o=0;
+	fsel=fcur;
 }
 
 void /* Pipe full lines including the selection */
