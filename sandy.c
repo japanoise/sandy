@@ -141,6 +141,7 @@ enum { /* To use in statusflags */
 	S_Sentence   = 1<<13, /* Sentence mode. Pass the next command's parameters (if adjective) to the verb's function */
 	S_Parameter  = 1<<14, /* Parameter mode. Pass the next character as parameter to the function of the command */
 	S_Multiply   = 1<<15, /* Multiply mode. Replay a command x times */
+	S_Visual     = 1<<16, /* Visual mode. You just select things */
 };
 
 enum { /* To use in Undo.flags */
@@ -259,6 +260,7 @@ static bool t_redo(void);
 static bool t_sel(void);
 static bool t_sent(void);
 static bool t_undo(void);
+static bool t_vis(void);
 static bool t_warn(void);
 
 /* m_ functions represent a cursor movement and can be passed in an Arg */
@@ -392,6 +394,7 @@ f_mark(const Arg *arg) {
 void /* Move cursor and extend/shrink selection as per arg->m */
 f_move(const Arg *arg) {
 	fcur=arg->m(fcur);
+	if(!t_vis()) fsel=fcur;
 }
 
 void /* Got to atoi(arg->v) position in the current line */
@@ -1556,10 +1559,12 @@ i_update(void) {
 		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
 #if VIM_BINDINGS
-		snprintf(title, BUFSIZ, "%s %s [%s]%s%s%s%s %ld,%d  %s %s",
-			(statusflags&S_Command?"Command":"Insert"),
+		snprintf(title, BUFSIZ, "%s %s [%s]%s%s%s%s %ld,%d  %s",
+			t_vis()?
+				"Visual":
+				(t_nocomm()?"Insert":"Command"),
 #else
-		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s %s",
+		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
 #endif
 			(statusflags&S_DumpStdout?"<Stdout>":(filename == NULL?"<No file>":filename)),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
@@ -1571,7 +1576,7 @@ i_update(void) {
 			(scrline==fstline?
 				(nlst<lines3?"All":"Top"):
 				(nlst-nscr<lines3?"Bot":buf)
-			), (statusflags&S_Sentence?"s":""));
+			));
 	}
 	if(titlewin) {
 		int i;
@@ -1844,6 +1849,11 @@ t_sent(void) {
 bool /* TRUE if there is anything to undo */
 t_undo(void) {
 	return (undos != NULL);
+}
+
+bool /* TRUE if we are in visual mode */
+t_vis(void) {
+	return (statusflags & S_Visual);
 }
 
 bool /* TRUE if we have warned the file is modified */
