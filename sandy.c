@@ -1571,13 +1571,12 @@ i_update(void) {
 	else {
 		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
+		snprintf(title, BUFSIZ, "%s%s [%s]%s%s%s%s %ld,%d  %s",
+			t_vis()?"Visual ":
 #if VIM_BINDINGS
-		snprintf(title, BUFSIZ, "%s %s [%s]%s%s%s%s %ld,%d  %s",
-			t_vis()?
-				"Visual":
-				(t_nocomm()?"Insert":"Command"),
+				(t_nocomm()?"Insert ":"Command "),
 #else
-		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
+				"",
 #endif
 			(statusflags&S_DumpStdout?"<Stdout>":(filename == NULL?"<No file>":filename)),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
