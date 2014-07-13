@@ -89,7 +89,7 @@ static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 { .keyv.i = KEY_NPAGE,      { 0,     0,    0,   0 },   f_move,      { .m = m_nextscr  } },
 { .keyv.i = KEY_UP,         { t_sent,0,    0,   0 },   f_adjective, { .m = m_prevline } },
 { .keyv.i = KEY_UP,         { 0,     0,    0,   0 },   f_move,      { .m = m_prevline } },
-// FIXME: Does not actually act to next line
+{ .keyv.i = KEY_DOWN,       { t_sent,0,    0,   0 },   f_move,      { .m = m_nextline } },
 { .keyv.i = KEY_DOWN,       { t_sent,0,    0,   0 },   f_adjective, { .m = m_nextline } },
 { .keyv.i = KEY_DOWN,       { 0,     0,    0,   0 },   f_move,      { .m = m_nextline } },
 { .keyv.i = KEY_LEFT,       { t_sent,0,    0,   0 },   f_adjective, { .m = m_prevchar } },
@@ -141,8 +141,8 @@ static const Key stdkeys[] = {
 { .keyv.c = META('v'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextscr     } },
 { .keyv.c = CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword    } },
 { .keyv.c = CONTROL('Z'), { 0,     0,    0,   0 },  f_suspend,   { 0                  } },
-#if VIM_BINDINGS
 { .keyv.c = CONTROL('['), { t_vis, 0,    0,   0 },  f_toggle,    { .i = S_Visual      } },
+#if VIM_BINDINGS
 { .keyv.c = CONTROL('['), { t_nocomm,0,  0,   0 },  f_toggle,    { .i = S_Command     } },
 #endif
 //{ .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  0,           { 0  } },
