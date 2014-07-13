@@ -264,6 +264,7 @@ static bool t_vis(void);
 static bool t_warn(void);
 
 /* m_ functions represent a cursor movement and can be passed in an Arg */
+static Filepos m_adjective(Filepos);
 static Filepos m_bof(Filepos);
 static Filepos m_bol(Filepos);
 static Filepos m_smartbol(Filepos);
@@ -887,7 +888,7 @@ i_edit(void) {
 							statusflags&=~S_Sentence;
 							break;
 						}
-					} else if(commkeys[i].arg.i == 0) {
+					} else if(commkeys[i].arg.m == m_adjective) {
 						statusflags|=(long)S_Sentence;
 						verb=commkeys[i].func;
 						break;
@@ -898,7 +899,7 @@ i_edit(void) {
 						statusflags&=~S_Parameter;
 						i_multiply(verb, (const Arg){ .v = c });
 						break;
-					} else if(commkeys[i].arg.m == 0) {
+					} else if(commkeys[i].arg.m == m_adjective) {
 						statusflags|=(long)S_Parameter;
 						verb=commkeys[i].func;
 						break;
@@ -1637,6 +1638,11 @@ i_writefile(char *fname) {
 
 /* M_* FUNCTIONS
 	Represent a cursor motion, always take a Filepos and return an update Filepos */
+Filepos /* Go to where the adjective says */
+m_adjective(Filepos pos) {
+  /* WARNING: this code is actually not used */
+  return pos;
+}
 
 Filepos /* Go to beginning of file */
 m_bof(Filepos pos) {
