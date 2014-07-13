@@ -297,7 +297,7 @@ f_adjective(const Arg *arg) {
 	statusflags&=~S_Sentence;
 	verb(arg);
 }
-#endif
+#endif /* VIM_BINDINGS */
 
 void /* Make cursor line the one in the middle of the screen if possible, refresh screen */
 f_center(const Arg *arg) {
@@ -817,7 +817,7 @@ i_edit(void) {
 							break;
 						}
 					}
-#endif
+#endif /* VIM_BINDINGS */
 
 					if(curskeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					i_multiply(curskeys[i].func, curskeys[i].arg);
@@ -852,7 +852,7 @@ i_edit(void) {
 							break;
 						}
 					}
-#endif
+#endif /* VIM_BINDINGS */
 
 					if(stdkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
 					i_multiply(stdkeys[i].func, stdkeys[i].arg);
@@ -932,7 +932,7 @@ i_edit(void) {
 		}
 #else
 		if(t_rw()) f_insert(&(const Arg){ .v = c });
-#endif
+#endif /* VIM_BINDINGS */
 		else tmptitle="WARNING! File is read-only!!!";
 		
 	}
@@ -1577,7 +1577,7 @@ i_update(void) {
 				(t_nocomm()?"Insert ":"Command "),
 #else
 				"",
-#endif
+#endif /* VIM_BINDINGS */
 			(statusflags&S_DumpStdout?"<Stdout>":(filename == NULL?"<No file>":filename)),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
 			(t_mod()?"[+]":""),
@@ -1831,7 +1831,7 @@ t_nocomm(void) {
 	return !(statusflags & S_Command);
 #else
 	return TRUE;
-#endif
+#endif /* VIM_BINDINGS */
 }
 
 bool /* TRUE if the file is writable */
@@ -1855,7 +1855,7 @@ t_sent(void) {
 	return (statusflags & S_Sentence);
 #else
 	return FALSE;
-#endif
+#endif /* VIM_BINDINGS */
 }
 
 bool /* TRUE if there is anything to undo */
