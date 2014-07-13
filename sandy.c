@@ -1399,15 +1399,15 @@ i_termwininit(void) {
 	noecho();
 	nl();
 	if(textwin) delwin(textwin);
-	if(tigetflag("hs") > 0) {
+	if(USE_TERM_STATUS && tigetflag("hs") > 0) {
 		tsl_str=tigetstr("tsl");
 		fsl_str=tigetstr("fsl");
 		textwin=newwin(lines,cols,0,0);
 	} else {
 		if(titlewin) delwin(titlewin);
-		titlewin=newwin(1,cols,0,0);
+		titlewin=newwin(1,cols,BOTTOM_TITLE?lines-1:0,0);
 		wattron(titlewin,A_REVERSE);
-		textwin=newwin(lines-1,cols,1,0);
+		textwin=newwin(lines-1,cols,BOTTOM_TITLE?0:1,0);
 	}
 	idlok(textwin, TRUE);
 	keypad(textwin, TRUE);
