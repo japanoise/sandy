@@ -1,3 +1,5 @@
+#include <ncurses.h>
+
 /* A simplified way to customize */
 #define HILIGHT_CURRENT 1
 #define HILIGHT_SYNTAX  1
@@ -324,6 +326,7 @@ static const Syntax syntaxes[] = {
 	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
+
 {"java", "\\.java$", {
 	/* HiRed   */  B"[A-Z_][0-9A-Z_]+"B,
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch)"B,
@@ -334,6 +337,7 @@ static const Syntax syntaxes[] = {
 	/* LoRed   */  "\"(\\\\.|[^\"])*\"",
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
+
 {"ruby", "\\.rb$", {
 	/* HiRed   */  "(\\$|@|@@)?"B"[A-Z]+[0-9A-Z_a-z]*",
 	/* HiGreen */  B"(__FILE__|__LINE__|BEGIN|END|alias|and|begin|break|case|class|def|defined\?|do|else|elsif|end|ensure|false|for|if|in|module|next|nil|not|or|redo|rescue|retry|return|self|super|then|true|undef|unless|until|when|while|yield)"B,
@@ -349,21 +353,32 @@ static const Syntax syntaxes[] = {
 #endif /* HILIGHT_SYNTAX */
 };
 
+/* Define colors /
+init_color(0x272822, 0x27, 0x28, 0x22);
+init_color(0x3E3D32, 0x3E, 0x3D, 0x32);
+init_color(0x66D9EF, 0x66, 0xD9, 0xEF);
+init_color(0x75715E, 0x75, 0x71, 0x5E);
+init_color(0xA6E22E, 0xA6, 0xE2, 0x2E);
+init_color(0xE6DB74, 0xE6, 0xDB, 0x74);
+init_color(0xF8F8F2, 0xF8, 0xF8, 0xF2);
+init_color(0xF92672, 0xF9, 0x26, 0x72);
+*/
+
 /* Colors */
 static const short  fgcolors[LastFG] = {
-	[DefFG]  = -1,
-	[CurFG]  = (HILIGHT_CURRENT?COLOR_BLACK:-1),
-	[SelFG]  = COLOR_BLACK,
+	[DefFG]  = 0xFFF, // 0xF8F8F2
+	[CurFG]  = -1,
+	[SelFG]  = -1,
 	[SpcFG]  = COLOR_WHITE,
 	[CtrlFG] = COLOR_RED,
 	[Syn0FG] = COLOR_RED,
-	[Syn1FG] = COLOR_GREEN,
-	[Syn2FG] = COLOR_GREEN,
+	[Syn1FG] = 0xF27, // 0xF92672
+	[Syn2FG] = 0x6DE, // 0x66D9EF
 	[Syn3FG] = COLOR_MAGENTA,
-	[Syn4FG] = COLOR_MAGENTA,
+	[Syn4FG] = 0xAE2, // 0xA6E22E
 	[Syn5FG] = COLOR_BLUE,
-	[Syn6FG] = COLOR_RED,
-	[Syn7FG] = COLOR_BLUE,
+	[Syn6FG] = 0xED7, // 0xE6DB74
+	[Syn7FG] = 0x775, // 0x7E8E91
 };
 
 static const int colorattrs[LastFG] = {
@@ -399,9 +414,9 @@ static const int bwattrs[LastFG] = {
 };
 
 static const short  bgcolors[LastBG] = {
-	[DefBG] = -1,
-	[CurBG] = (HILIGHT_CURRENT?COLOR_CYAN:-1),
-	[SelBG] = COLOR_YELLOW,
+	[DefBG] = 0x222, // 0x272822 or 0x1B1D1E
+	[CurBG] = (HILIGHT_CURRENT?0x333:-1), // 0x3E3D32 or 0x293739
+	[SelBG] = 0x333, // 0x3E3D32 or 0x293739
 };
 
 /* Helper config functions implementation */

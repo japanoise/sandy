@@ -2,8 +2,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <locale.h>
-#include <ncurses.h>
 #include <regex.h>
+#include <ncurses.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -113,7 +113,7 @@ struct Undo {                       /** Undo information */
 /* ENUMS */
 /* Colors */
 enum { DefFG, CurFG, SelFG, SpcFG, CtrlFG, Syn0FG, Syn1FG, Syn2FG, Syn3FG, Syn4FG, Syn5FG, Syn6FG, Syn7FG, LastFG, };
-enum { DefBG, CurBG, SelBG, /* WARNING: BGs MUST have a matching FG */     LastBG, };
+enum { DefBG, CurBG, SelBG, /* WARNING: BGs MUST have a matching FG */                                     LastBG, };
 
 /* arg->i to use in f_extsel() */
 enum { ExtDefault, ExtWord, ExtLines, ExtAll, };
@@ -1341,6 +1341,10 @@ i_setup(void){
 		use_default_colors();
 		for(i=0; i<LastFG; i++)
 			for(j=0; j<LastBG; j++) {
+				/* Handle more than 8 colors */
+				if(fgcolors[i] > 7) init_color(fgcolors[i], fgcolors[i] >> 8, (fgcolors[i] >> 4) & 0xF, fgcolors[i] & 0xFF);
+				if(bgcolors[i] > 7) init_color(bgcolors[i], bgcolors[i] >> 8, (bgcolors[i] >> 4) & 0xF, bgcolors[i] & 0xFF);
+
 				init_pair((i*LastBG)+j, fgcolors[i], bgcolors[j]);
 				textattrs[i][j] = COLOR_PAIR((i*LastBG)+j) | colorattrs[i];
 			}
