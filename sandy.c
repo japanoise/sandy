@@ -255,7 +255,6 @@ static bool t_bol(void);
 static bool t_eol(void);
 static bool t_ins(void);
 static bool t_mod(void);
-static bool t_nocomm(void);
 static bool t_rw(void);
 static bool t_redo(void);
 static bool t_sel(void);
