@@ -72,7 +72,7 @@ static void f_pipenull(const Arg*);
 
 static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 /* keyv.i,                  tests,                     func,       arg */
-{ .keyv.i = KEY_BACKSPACE,  { t_rw,  t_nocomm,0,0 },   f_delete,    { .m = m_prevchar } },
+{ .keyv.i = KEY_BACKSPACE,  { t_rw,  t_ins,0,   0 },   f_delete,    { .m = m_prevchar } },
 { .keyv.i = KEY_BACKSPACE,  { 0,     0,    0,   0 },   f_move,      { .m = m_prevchar } },
 { .keyv.i = KEY_DC,         { t_sel, t_rw, 0,   0 },   f_delete,    { .m = m_tosel    } },
 { .keyv.i = KEY_DC,         { t_rw,  0,    0,   0 },   f_delete,    { .m = m_nextchar } },
@@ -121,16 +121,16 @@ static const Key stdkeys[] = {
 { .keyv.c = META('f'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextword    } },
 { .keyv.c = CONTROL('G'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_stay        } },
 { .keyv.c = CONTROL('H'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar    } },
-{ .keyv.c = CONTROL('I'), { t_rw,  t_nocomm,0,0 },  f_insert,    { .v = "\t"          } },
+{ .keyv.c = CONTROL('I'), { t_rw,  t_ins,0,   0 },  f_insert,    { .v = "\t"          } },
 { .keyv.c = CONTROL('J'), { t_rw,  t_ai, 0,   0 },  f_pipeai,    { .v = AUTOINDENT    } },
-{ .keyv.c = CONTROL('J'), { t_rw,  t_nocomm,0,0 },  f_insert,    { .v = "\n"          } },
+{ .keyv.c = CONTROL('J'), { t_rw,  t_ins,0,   0 },  f_insert,    { .v = "\n"          } },
 { .keyv.c = CONTROL('J'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline    } },
 { .keyv.c = CONTROL('K'), { t_eol, t_rw, 0,   0 },  f_delete,    { .m = m_nextchar    } },
 { .keyv.c = CONTROL('K'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol         } },
 { .keyv.c = CONTROL('L'), { 0,     0,    0,   0 },  f_center,    { 0                  } },
 { .keyv.c = META('l'),    { t_sel, t_rw, 0,   0 },  f_pipe,      { .v = "tr [A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ] [a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþ]" } }, /* Lowercase */
 { .keyv.c = CONTROL('M'), { t_rw,  t_ai, 0,   0 },  f_pipeai,    { .v = AUTOINDENT    } } ,
-{ .keyv.c = CONTROL('M'), { t_rw,  t_nocomm,0,0 },  f_insert,    { .v = "\n"          } },
+{ .keyv.c = CONTROL('M'), { t_rw,  t_ins,0,   0 },  f_insert,    { .v = "\n"          } },
 { .keyv.c = CONTROL('M'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline    } },
 { .keyv.c = CONTROL('N'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextline    } },
 { .keyv.c = CONTROL('O'), { t_sel, 0,    0,   0 },  f_select,    { .m = m_tosel       } }, /* Swap fsel and fcur */
@@ -155,11 +155,10 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('Z'), { 0,     0,    0,   0 },  f_suspend,   { 0                  } },
 { .keyv.c = CONTROL('['), { t_vis, 0,    0,   0 },  f_toggle,    { .i = S_Visual      } },
 #if VIM_BINDINGS
-{ .keyv.c = CONTROL('['), { t_nocomm,0,  0,   0 },  f_toggle,    { .i = S_Command     } },
+{ .keyv.c = CONTROL('['), { t_ins, 0,  0,   0 },  f_toggle,    { .i = S_Command     } },
 #else
 { .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 #endif
-//{ .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  0,           { 0  } },
 { .keyv.c = CONTROL('\\'),{ t_rw,  0,    0,   0 },  f_spawn,     PIPE                   },
 { .keyv.c = META('\\'),   { t_rw,  0,    0,   0 },  f_spawn,     SED                    },
 { .keyv.c = CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault    } },
@@ -177,14 +176,25 @@ static const Key stdkeys[] = {
 static const Key commkeys[] = { /* Command mode keys here */
 /* keyv.c,                  tests,                     func,       arg */
 { .keyv.c = { '$' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_eol          } },
+{ .keyv.c = { '$' },      { 0,     0,    0,   0 },  f_move,      { .m = m_eol          } },
 { .keyv.c = { '^' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_bol          } },
+{ .keyv.c = { '^' },      { 0,     0,    0,   0 },  f_move,      { .m = m_bol          } },
+{ .keyv.c = { 'A' },      { 0,     0,    0,   0 },  f_move,      { .m = m_eol          } },
+{ .keyv.c = { 'A' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar     } },
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'b' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_prevword     } },
 { .keyv.c = { 'b' },      { 0,     0,    0,   0 },  f_move,      { .m = m_prevword     } },
-{ .keyv.c = { 'c' },      { t_rw,  0,    0,   0 },  f_delete,    { .i = 0              } },
-{ .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_delete,    { .i = 0              } },
+{ .keyv.c = { 'c' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
+{ .keyv.c = { 'c' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_adjective    } }, /* TODO: queue insert mode, similar to 'y' */
+{ .keyv.c = { 'C' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol          } },
+{ .keyv.c = { 'C' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command      } },
+{ .keyv.c = { 'd' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
+{ .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_adjective    } },
+{ .keyv.c = { 'D' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol          } },
+{ .keyv.c = { 'g' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_bof          } },
 { .keyv.c = { 'g' },      { 0,     0,    0,   0 },  f_move,      { .m = m_bof          } },
+{ .keyv.c = { 'G' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_eof          } },
 { .keyv.c = { 'G' },      { 0,     0,    0,   0 },  f_move,      { .m = m_eof          } },
 { .keyv.c = { 'h' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_prevchar     } },
 { .keyv.c = { 'h' },      { 0,     0,    0,   0 },  f_move,      { .m = m_prevchar     } },
@@ -195,9 +205,9 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'k' },      { 0,     0,    0,   0 },  f_move,      { .m = m_prevline     } },
 { .keyv.c = { 'l' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_nextchar     } },
 { .keyv.c = { 'l' },      { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar     } },
-{ .keyv.c = { 'm' },      { 0,     0,    0,   0 },  f_mark,      { 0                   } },
-{ .keyv.c = { 'n' },      { t_sel, 0,    0,   0 },  f_findfw,    { 0                   } },
-{ .keyv.c = { 'N' },      { t_sel, 0,    0,   0 },  f_findbw,    { 0                   } },
+{ .keyv.c = { 'm' },      { 0,     0,    0,   0 },  f_mark,      { .i = 0              } },
+{ .keyv.c = { 'n' },      { 0,     0,    0,   0 },  f_findfw,    { .i = 0              } },
+{ .keyv.c = { 'N' },      { 0,     0,    0,   0 },  f_findbw,    { .i = 0              } },
 { .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_move,      { .m = m_eol          } },
 { .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_pipeai,    { .v = AUTOINDENT     } },
 { .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_toggle,    { .i = S_Command      } },
@@ -225,7 +235,7 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'x' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextchar     } },
 { .keyv.c = { 'X' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
 { .keyv.c = { 'X' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar     } },
-{ .keyv.c = { 'y' },      { t_rw,  0,    0,   0 },  f_pipero,    { .i = 0, .v = TOCLIP } },
+{ .keyv.c = { 'y' },      { t_rw,  0,    0,   0 },  f_pipero,    { .m = m_adjective, .v = TOCLIP } }, /* TODO: won't work since Arg is a union */
 { .keyv.c = { ';' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P                   },
 { .keyv.c = { ':' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P                   },
 { .keyv.c = { '\'' },     { 0,     0,    0,   0 },  f_move,      { .m = m_tomark       } },
@@ -248,7 +258,7 @@ static const Click clks[] = {
 /* mouse mask,           fcur / fsel,      tests,               func,       arg */
 {BUTTON1_CLICKED,        { TRUE , TRUE  }, { 0,     0,     0 }, 0,          { 0 } },
 {BUTTON3_CLICKED,        { TRUE , FALSE }, { t_sel, 0,     0 }, f_pipero,   { .v = TOSEL } },
-{BUTTON2_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_pipenull, { .v = FROMSEL } },
+{BUTTON2_CLICKED,        { FALSE, FALSE }, { t_rw,  0,     0 }, f_pipenull, { .v = FROMSEL } },
 //{BUTTON4_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_prevscr } },
 //{BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } },
 /* ^^ NCurses is a sad old library.... it does not include button 5 nor cursor movement in its mouse declaration by default */

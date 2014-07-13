@@ -253,6 +253,7 @@ static bool           i_writefile(char*);
 static bool t_ai(void);
 static bool t_bol(void);
 static bool t_eol(void);
+static bool t_ins(void);
 static bool t_mod(void);
 static bool t_nocomm(void);
 static bool t_rw(void);
@@ -264,6 +265,7 @@ static bool t_vis(void);
 static bool t_warn(void);
 
 /* m_ functions represent a cursor movement and can be passed in an Arg */
+static Filepos m_adjective(Filepos);
 static Filepos m_bof(Filepos);
 static Filepos m_bol(Filepos);
 static Filepos m_smartbol(Filepos);
@@ -864,8 +866,8 @@ i_edit(void) {
 		statusflags&=~(S_InsEsc);
 
 #if VIM_BINDINGS
-		if(t_rw() && t_nocomm()) f_insert(&(const Arg){ .v = c });
-		else if(!t_nocomm()) {
+		if(t_rw() && t_ins()) f_insert(&(const Arg){ .v = c });
+		else if(!t_ins()) {
 			if(ch >= '0' && ch <= '9' && !(statusflags & S_Parameter)) {
 				if(statusflags & S_Multiply) {
 					multiply*=10;
@@ -887,7 +889,7 @@ i_edit(void) {
 							statusflags&=~S_Sentence;
 							break;
 						}
-					} else if(commkeys[i].arg.i == 0) {
+					} else if(commkeys[i].arg.m == m_adjective) {
 						statusflags|=(long)S_Sentence;
 						verb=commkeys[i].func;
 						break;
@@ -898,7 +900,7 @@ i_edit(void) {
 						statusflags&=~S_Parameter;
 						i_multiply(verb, (const Arg){ .v = c });
 						break;
-					} else if(commkeys[i].arg.m == 0) {
+					} else if(commkeys[i].arg.m == m_adjective) {
 						statusflags|=(long)S_Parameter;
 						verb=commkeys[i].func;
 						break;
@@ -934,7 +936,7 @@ i_edit(void) {
 		if(t_rw()) f_insert(&(const Arg){ .v = c });
 #endif /* VIM_BINDINGS */
 		else tmptitle="WARNING! File is read-only!!!";
-		
+
 	}
 }
 
@@ -1578,7 +1580,7 @@ i_update(void) {
 		snprintf(title, BUFSIZ, "%s%s [%s]%s%s%s%s %ld,%d  %s",
 			t_vis()?"Visual ":
 #if VIM_BINDINGS
-				(t_nocomm()?"Insert ":"Command "),
+				(t_ins()?"Insert ":"Command "),
 #else
 				"",
 #endif /* VIM_BINDINGS */
@@ -1641,6 +1643,11 @@ i_writefile(char *fname) {
 
 /* M_* FUNCTIONS
 	Represent a cursor motion, always take a Filepos and return an update Filepos */
+Filepos /* Go to where the adjective says */
+m_adjective(Filepos pos) {
+  /* WARNING: this code is actually not used */
+  return pos;
+}
 
 Filepos /* Go to beginning of file */
 m_bof(Filepos pos) {
@@ -1830,7 +1837,7 @@ t_mod(void) {
 }
 
 bool /* TRUE if we are not in command mode */
-t_nocomm(void) {
+t_ins(void) {
 #if VIM_BINDINGS
 	return !(statusflags & S_Command);
 #else
