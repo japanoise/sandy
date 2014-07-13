@@ -159,7 +159,6 @@ static const Key stdkeys[] = {
 #else
 { .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  f_spawn,     CMD_P },
 #endif
-//{ .keyv.c = CONTROL('['), { 0,     0,    0,   0 },  0,           { 0  } },
 { .keyv.c = CONTROL('\\'),{ t_rw,  0,    0,   0 },  f_spawn,     PIPE                   },
 { .keyv.c = META('\\'),   { t_rw,  0,    0,   0 },  f_spawn,     SED                    },
 { .keyv.c = CONTROL(']'), { 0,     0,    0,   0 },  f_extsel,    { .i = ExtDefault    } },
@@ -177,7 +176,11 @@ static const Key stdkeys[] = {
 static const Key commkeys[] = { /* Command mode keys here */
 /* keyv.c,                  tests,                     func,       arg */
 { .keyv.c = { '$' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_eol          } },
+{ .keyv.c = { '$' },      { 0,     0,    0,   0 },  f_move,      { .m = m_eol          } },
 { .keyv.c = { '^' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_bol          } },
+{ .keyv.c = { '^' },      { 0,     0,    0,   0 },  f_move,      { .m = m_bol          } },
+{ .keyv.c = { 'A' },      { 0,     0,    0,   0 },  f_move,      { .m = m_eol          } },
+{ .keyv.c = { 'A' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar     } },
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'b' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_prevword     } },
@@ -195,9 +198,9 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'k' },      { 0,     0,    0,   0 },  f_move,      { .m = m_prevline     } },
 { .keyv.c = { 'l' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_nextchar     } },
 { .keyv.c = { 'l' },      { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar     } },
-{ .keyv.c = { 'm' },      { 0,     0,    0,   0 },  f_mark,      { 0                   } },
-{ .keyv.c = { 'n' },      { t_sel, 0,    0,   0 },  f_findfw,    { 0                   } },
-{ .keyv.c = { 'N' },      { t_sel, 0,    0,   0 },  f_findbw,    { 0                   } },
+{ .keyv.c = { 'm' },      { 0,     0,    0,   0 },  f_mark,      { .i = 0              } },
+{ .keyv.c = { 'n' },      { 0,     0,    0,   0 },  f_findfw,    { .i = 0              } },
+{ .keyv.c = { 'N' },      { 0,     0,    0,   0 },  f_findbw,    { .i = 0              } },
 { .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_move,      { .m = m_eol          } },
 { .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_pipeai,    { .v = AUTOINDENT     } },
 { .keyv.c = { 'o' },      { t_rw,  t_ai, 0,   0 },  f_toggle,    { .i = S_Command      } },
@@ -248,7 +251,7 @@ static const Click clks[] = {
 /* mouse mask,           fcur / fsel,      tests,               func,       arg */
 {BUTTON1_CLICKED,        { TRUE , TRUE  }, { 0,     0,     0 }, 0,          { 0 } },
 {BUTTON3_CLICKED,        { TRUE , FALSE }, { t_sel, 0,     0 }, f_pipero,   { .v = TOSEL } },
-{BUTTON2_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_pipenull, { .v = FROMSEL } },
+{BUTTON2_CLICKED,        { FALSE, FALSE }, { t_rw,  0,     0 }, f_pipenull, { .v = FROMSEL } },
 //{BUTTON4_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_prevscr } },
 //{BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } },
 /* ^^ NCurses is a sad old library.... it does not include button 5 nor cursor movement in its mouse declaration by default */
