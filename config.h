@@ -1,6 +1,6 @@
-#include <ncurses.h>
-
 /* A simplified way to customize */
+#define USE_TERM_STATUS 1
+#define BOTTOM_TITLE    0
 #define HILIGHT_CURRENT 1
 #define HILIGHT_SYNTAX  1
 #define SHOW_NONPRINT   0
@@ -364,17 +364,6 @@ static const Syntax syntaxes[] = {
 {"", "\0", { "\0", "\0", "\0", "\0", "\0", "\0", "\0", "\0" } }
 #endif /* HILIGHT_SYNTAX */
 };
-
-/* Define colors /
-init_color(0x272822, 0x27, 0x28, 0x22);
-init_color(0x3E3D32, 0x3E, 0x3D, 0x32);
-init_color(0x66D9EF, 0x66, 0xD9, 0xEF);
-init_color(0x75715E, 0x75, 0x71, 0x5E);
-init_color(0xA6E22E, 0xA6, 0xE2, 0x2E);
-init_color(0xE6DB74, 0xE6, 0xDB, 0x74);
-init_color(0xF8F8F2, 0xF8, 0xF8, 0xF2);
-init_color(0xF92672, 0xF9, 0x26, 0x72);
-*/
 
 /* Colors */
 static const short  fgcolors[LastFG] = {
