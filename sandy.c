@@ -137,6 +137,11 @@ enum { /* To use in statusflags */
 	S_GroupUndo  = 1<<9,  /* Last action was an insert, so another insert should group with it, set automatically */
 	S_AutoIndent = 1<<10, /* Perform autoindenting on RET */
 	S_DumpStdout = 1<<11, /* Dump to stdout instead of writing to a file */
+	S_Command    = 1<<12, /* Command mode */
+	S_Sentence   = 1<<13, /* Sentence mode. Pass the next command's parameters (if adjective) to the verb's function */
+	S_Parameter  = 1<<14, /* Parameter mode. Pass the next character as parameter to the function of the command */
+	S_Multiply   = 1<<15, /* Multiply mode. Replay a command x times */
+	S_Visual     = 1<<16, /* Visual mode. You just select things */
 };
 
 enum { /* To use in Undo.flags */
@@ -157,35 +162,38 @@ static const char *envs[EnvLast] = {
 };
 
 /* Variables */
-static Line     *fstline;                   /* First line*/
-static Line     *lstline;                   /* Last line */
-static Line     *scrline;                   /* First line seen on screen */
-static Filepos   fsel;                      /* Selection point on file */
-static Filepos   fcur;                      /* Insert position on file, cursor, current position */
-static Filepos   fmrk = { NULL, 0 };        /* Mark */
-static int       syntx = -1;                /* Current syntax index */
-static regex_t  *find_res[2];               /* Compiled regex for search term */
-static int       sel_re = 0;                /* Index to the above, we keep 2 REs so regexec does not segfault */
-static char     *fifopath = NULL;           /* Path to command fifo */
-static char     *filename = NULL;           /* Path to file loade on buffer */
-static char     *title    = NULL;           /* Screen title */
-static char     *tmptitle = NULL;           /* Screen title, temporary */
-static char     *tsl_str  = NULL;           /* String to print to status line */
-static char     *fsl_str  = NULL;           /* String to come back from status line */
-static WINDOW   *titlewin = NULL;           /* Title ncurses window, NULL if there is a status line */
-static WINDOW   *textwin  = NULL;           /* Main ncurses window */
-static Undo     *undos;                     /* Undo ring */
-static Undo     *redos;                     /* Redo ring */
-static int       textattrs[LastFG][LastBG]; /* Text attributes for each color pair */
-static int       savestep=0;                /* Index to determine the need to save in undo/redo action */
-static int       fifofd;                    /* Command fifo file descriptor */
-static long      statusflags=S_Running;     /* Status flags, very important, OR'd (see enums above) */
-static int       lastaction=LastNone;       /* The last action we took (see enums above) */
-static int       cols, lines;               /* Ncurses: to use instead of COLS and LINES, wise */
-static mmask_t   defmmask = 0;              /* Ncurses: mouse event mask */
+static Line     *fstline;                           /* First line*/
+static Line     *lstline;                           /* Last line */
+static Line     *scrline;                           /* First line seen on screen */
+static Filepos   fsel;                              /* Selection point on file */
+static Filepos   fcur;                              /* Insert position on file, cursor, current position */
+static Filepos   fmrk = { NULL, 0 };                /* Mark */
+static int       syntx = -1;                        /* Current syntax index */
+static regex_t  *find_res[2];                       /* Compiled regex for search term */
+static int       sel_re = 0;                        /* Index to the above, we keep 2 REs so regexec does not segfault */
+static char     *fifopath = NULL;                   /* Path to command fifo */
+static char     *filename = NULL;                   /* Path to file loade on buffer */
+static char     *title    = NULL;                   /* Screen title */
+static char     *tmptitle = NULL;                   /* Screen title, temporary */
+static char     *tsl_str  = NULL;                   /* String to print to status line */
+static char     *fsl_str  = NULL;                   /* String to come back from status line */
+static WINDOW   *titlewin = NULL;                   /* Title ncurses window, NULL if there is a status line */
+static WINDOW   *textwin  = NULL;                   /* Main ncurses window */
+static Undo     *undos;                             /* Undo ring */
+static Undo     *redos;                             /* Redo ring */
+static int       textattrs[LastFG][LastBG];         /* Text attributes for each color pair */
+static int       savestep=0;                        /* Index to determine the need to save in undo/redo action */
+static int       fifofd;                            /* Command fifo file descriptor */
+static long      statusflags=S_Running | S_Command; /* Status flags, very important, OR'd (see enums above) */
+static int       lastaction=LastNone;               /* The last action we took (see enums above) */
+static int       cols, lines;                       /* Ncurses: to use instead of COLS and LINES, wise */
+static mmask_t   defmmask = 0;                      /* Ncurses: mouse event mask */
+static void    (*verb)(const Arg *arg);             /* Verb of current sentence */
+static int       multiply = 1;                      /* Times to replay a command */
 
 /* Functions */
 /* f_* functions can be linked to an action or keybinding */
+static void f_adjective(const Arg*);
 static void f_center(const Arg*);
 static void f_delete(const Arg*);
 static void f_extsel(const Arg*);
@@ -225,6 +233,7 @@ static void           i_killundos(Undo**);
 static Line          *i_lineat(unsigned long);
 static unsigned long  i_lineno(Line*);
 static void           i_mouse(void);
+static void           i_multiply(void (*func)(const Arg *arg), const Arg arg);
 static void           i_pipetext(const char*);
 static void           i_readfifo(void);
 static void           i_readfile(char*);
@@ -244,11 +253,14 @@ static bool           i_writefile(char*);
 static bool t_ai(void);
 static bool t_bol(void);
 static bool t_eol(void);
+static bool t_ins(void);
 static bool t_mod(void);
 static bool t_rw(void);
 static bool t_redo(void);
 static bool t_sel(void);
+static bool t_sent(void);
 static bool t_undo(void);
+static bool t_vis(void);
 static bool t_warn(void);
 
 /* m_ functions represent a cursor movement and can be passed in an Arg */
@@ -278,6 +290,14 @@ static regex_t *syntax_res[LENGTH(syntaxes)][SYN_COLORS];
 
 /* F_* FUNCTIONS
 	Can be linked to an action or keybinding. Always return void and take const Arg* */
+
+#if VIM_BINDINGS
+void
+f_adjective(const Arg *arg) {
+	statusflags&=~S_Sentence;
+	verb(arg);
+}
+#endif /* VIM_BINDINGS */
 
 void /* Make cursor line the one in the middle of the screen if possible, refresh screen */
 f_center(const Arg *arg) {
@@ -351,7 +371,7 @@ f_insert(const Arg *arg) {
 		i_addundo(TRUE, fcur, newcur, strdup((char*)arg->v));
 		if(fcur.l!=newcur.l) fsel=newcur;
 	}
-	fcur=newcur;
+	fcur=fsel=newcur;
 	statusflags|=(S_Modified|S_GroupUndo);
 	lastaction=LastInsert;
 }
@@ -374,6 +394,7 @@ f_mark(const Arg *arg) {
 void /* Move cursor and extend/shrink selection as per arg->m */
 f_move(const Arg *arg) {
 	fcur=arg->m(fcur);
+	if(!t_vis()) fsel=fcur;
 }
 
 void /* Got to atoi(arg->v) position in the current line */
@@ -530,7 +551,7 @@ f_undo(const Arg *arg) {
 			i_deltext(start, end);
 			fcur=fsel=start;
 		} else
-			fcur=i_addtext(u->str, fcur);
+			fcur=fsel=i_addtext(u->str, fcur);
 		if(isredo)
 			redos=u->prev, u->prev=undos, undos=u;
 		else
@@ -739,8 +760,9 @@ i_dotests(bool (*const a[])(void)) {
 
 void /* Main editing loop */
 i_edit(void) {
-	int ch, i;
+	int ch, i, j;
 	char c[7];
+	bool pass;
 	fd_set fds;
 	Filepos oldsel, oldcur;
 
@@ -785,8 +807,20 @@ i_edit(void) {
 #endif /* HANDLE_MOUSE */
 			for(i=0; i<LENGTH(curskeys); i++) {
 				if(ch == curskeys[i].keyv.i && i_dotests(curskeys[i].test) ) {
+
+#if VIM_BINDINGS
+					if(t_sent()) {
+						if(curskeys[i].func == verb) i_multiply(verb, (const Arg){ .m = m_nextline });
+
+						if(curskeys[i].func != f_adjective) {
+							statusflags&=~S_Sentence;
+							break;
+						}
+					}
+#endif /* VIM_BINDINGS */
+
 					if(curskeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
-					curskeys[i].func(&(curskeys[i].arg));
+					i_multiply(curskeys[i].func, curskeys[i].arg);
 					break;
 				}
 			}
@@ -808,16 +842,99 @@ i_edit(void) {
 		if(!(statusflags&S_InsEsc) && ISCTRL(c[0])) {
 			for(i=0; i<LENGTH(stdkeys); i++) {
 				if(memcmp(c, stdkeys[i].keyv.c, sizeof stdkeys[i].keyv.c) == 0 && i_dotests(stdkeys[i].test) ) {
+
+#if VIM_BINDINGS
+					if(t_sent()) {
+						if(stdkeys[i].func == verb) i_multiply(verb, (const Arg){ .m = m_nextline });
+
+						if(stdkeys[i].func != f_adjective) {
+							statusflags&=~S_Sentence;
+							break;
+						}
+					}
+#endif /* VIM_BINDINGS */
+
 					if(stdkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
-					stdkeys[i].func(&(stdkeys[i].arg));
+					i_multiply(stdkeys[i].func, stdkeys[i].arg);
 					break;
 				}
 			}
 			continue;
 		}
 		statusflags&=~(S_InsEsc);
+
+#if VIM_BINDINGS
+		if(t_rw() && t_ins()) f_insert(&(const Arg){ .v = c });
+		else if(!t_ins()) {
+			if(ch >= '0' && ch <= '9' && !(statusflags & S_Parameter)) {
+				if(statusflags & S_Multiply) {
+					multiply*=10;
+					multiply+=(int)ch-'0';
+				} else {
+					statusflags|=S_Multiply;
+					multiply=(int)ch-'0';
+				}
+			} else for(i=0; i<LENGTH(commkeys); i++) {
+				if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
+					if(commkeys[i].func != f_insert) statusflags&=~(S_GroupUndo);
+
+					/* Handle sentences */
+					// FIXME: Find a better way to tell if a func is a verb or parameter
+					if(t_sent()) {
+						if(commkeys[i].func == verb) i_multiply(verb, (const Arg){ .m = m_nextline });
+
+						if(commkeys[i].func != f_adjective) {
+							statusflags&=~S_Sentence;
+							break;
+						}
+					} else if(commkeys[i].arg.i == 0) {
+						statusflags|=(long)S_Sentence;
+						verb=commkeys[i].func;
+						break;
+					}
+
+					/* Handle parameter sentences (verb is used here to define the command to execute) */
+					if(statusflags & S_Parameter) {
+						statusflags&=~S_Parameter;
+						i_multiply(verb, (const Arg){ .v = c });
+						break;
+					} else if(commkeys[i].arg.m == 0) {
+						statusflags|=(long)S_Parameter;
+						verb=commkeys[i].func;
+						break;
+					}
+
+					i_multiply(commkeys[i].func, commkeys[i].arg);
+
+					/* Handle multi-function commands */
+					// TODO: Find a way to handle multi-function verbs
+					if(i+1 < LENGTH(commkeys)) {
+						if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0) {
+							j=-1;
+							pass=TRUE;
+
+							while(1)
+								if(commkeys[i].test[++j]) {
+									if(commkeys[i].test[j] != commkeys[i+1].test[j]) {
+										pass=FALSE;
+										break;
+									}
+								} else break;
+
+							if(pass) continue;
+							else break;
+						}
+					}
+
+					break;
+				}
+			}
+		}
+#else
 		if(t_rw()) f_insert(&(const Arg){ .v = c });
+#endif /* VIM_BINDINGS */
 		else tmptitle="WARNING! File is read-only!!!";
+
 	}
 }
 
@@ -929,6 +1046,22 @@ i_mouse(void) {
 		}
 }
 #endif /* HANDLE_MOUSE */
+
+// FIXME: Some weird thing can be executed (example: 5a or 0a which does nothing)
+void /* Handle multiplication */
+i_multiply(void (*func)(const Arg *arg), const Arg arg) {
+	int i;
+
+	if(statusflags & S_Multiply) {
+		//statusflags|=S_GroupUndo;
+		for(i=0; i<multiply; i++)
+			func(&arg);
+
+		statusflags&=~S_Multiply;
+		multiply=1;
+	} else
+		func(&arg);
+}
 
 void /* Pipe text between fsel and fcur through cmd */
 i_pipetext(const char *cmd) {
@@ -1438,7 +1571,13 @@ i_update(void) {
 	else {
 		statusflags&=~S_Warned; /* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100*ncur)/nlst);
-		snprintf(title, BUFSIZ, "%s [%s]%s%s%s%s %ld,%d  %s",
+		snprintf(title, BUFSIZ, "%s%s [%s]%s%s%s%s %ld,%d  %s",
+			t_vis()?"Visual ":
+#if VIM_BINDINGS
+				(t_ins()?"Insert ":"Command "),
+#else
+				"",
+#endif /* VIM_BINDINGS */
 			(statusflags&S_DumpStdout?"<Stdout>":(filename == NULL?"<No file>":filename)),
 			(syntx>=0 ? syntaxes[syntx].name : "none"),
 			(t_mod()?"[+]":""),
@@ -1665,6 +1804,7 @@ m_tosel(Filepos pos) {
 
 /* T_* FUNCTIONS
 	Used to test for conditions, take no arguments and return bool. */
+
 bool /* TRUE is autoindent is on */
 t_ai(void) {
 	return (statusflags & S_AutoIndent);
@@ -1685,6 +1825,15 @@ t_mod(void) {
 	return (statusflags & S_Modified);
 }
 
+bool /* TRUE if we are not in command mode */
+t_ins(void) {
+#if VIM_BINDINGS
+	return !(statusflags & S_Command);
+#else
+	return TRUE;
+#endif /* VIM_BINDINGS */
+}
+
 bool /* TRUE if the file is writable */
 t_rw(void) {
 	return !(statusflags & S_Readonly);
@@ -1700,9 +1849,23 @@ t_sel(void) {
 	return !(fcur.l==fsel.l && fcur.o == fsel.o);
 }
 
+bool /* TRUE if a sentence has started */
+t_sent(void) {
+#if VIM_BINDINGS
+	return (statusflags & S_Sentence);
+#else
+	return FALSE;
+#endif /* VIM_BINDINGS */
+}
+
 bool /* TRUE if there is anything to undo */
 t_undo(void) {
 	return (undos != NULL);
+}
+
+bool /* TRUE if we are in visual mode */
+t_vis(void) {
+	return (statusflags & S_Visual);
 }
 
 bool /* TRUE if we have warned the file is modified */
@@ -1718,6 +1881,7 @@ main(int argc, char **argv){
 
 	/* Use system locale, hopefully UTF-8 */
 	setlocale(LC_ALL,"");
+	ESCDELAY=0; // FIXME: Change this to something else to support num keys?
 
 	for(i = 1; i < argc && argv[i][0] == '-' && argv[i][1] != '\0'; i++) {
 		if(!strcmp(argv[i], "-r")) {
@@ -1742,7 +1906,7 @@ main(int argc, char **argv){
 			i++;
 			break;
 		} else if(!strcmp(argv[i], "-v"))
-			i_die("sandy-"VERSION", © 2011 sandy engineers, see LICENSE for details\n");
+			i_die("sandy-"VERSION", © 2014 sandy engineers, see LICENSE for details\n");
 		else
 			i_usage();
 	}

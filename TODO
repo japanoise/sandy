@@ -2,13 +2,17 @@ In no particular order, at sandy.c:
 - Update manpage
 - Create m_*vline
 - Bracket matching?
-- Number modifier?
 - Smart end? is it really needed?
 - BUG: high CPU usage on continuous resize
 - BUG: Deal with the bigger-than-window line
 - Improve regex search (backwards!!)
 - Improve syntax highlight, multiline?
 - Group delete undos?
+- Show line numbers
+- Show some documentation when you press tab in command mode
+- FINDBW prompt? is it needed?
+- Support multiple marks (with S_Parameter)
+- Instead of delete, just cut
 
 At config.def.h:
 - Bindings!
