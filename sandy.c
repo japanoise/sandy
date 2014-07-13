@@ -492,7 +492,7 @@ f_spawn(const Arg *arg) {
 
 void
 f_suspend(const Arg *arg) {
-	wclear(textwin);
+	endwin();
 	signal (SIGCONT, i_sigcont);
 	raise(SIGSTOP);
 }
