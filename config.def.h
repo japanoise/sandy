@@ -293,7 +293,7 @@ static const Command cmds[] = { /* REMEMBER: if(arg == 0) arg.v=regex_match */
 
 static const Syntax syntaxes[] = {
 #if HILIGHT_SYNTAX
-{"c", "\\.(c(pp|xx)?|h(pp|xx)?|cc)$", {
+{"c", "\\.([ch](pp|xx)?|cc)$", {
 	/* HiRed   */  "$^",
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)"B,
 	/* LoGreen */  B"(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)"B,
