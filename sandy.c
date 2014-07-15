@@ -190,6 +190,7 @@ static int       lastaction=LastNone;               /* The last action we took (
 static int       cols, lines;                       /* Ncurses: to use instead of COLS and LINES, wise */
 static mmask_t   defmmask = 0;                      /* Ncurses: mouse event mask */
 static void    (*verb)(const Arg *arg);             /* Verb of current sentence */
+static Arg       varg;                              /* Arguments of the verb (some will be overwritten by adjective) */
 static int       multiply = 1;                      /* Times to replay a command */
 
 /* Functions */
@@ -299,7 +300,12 @@ static regex_t *syntax_res[LENGTH(syntaxes)][SYN_COLORS];
 void
 f_adjective(const Arg *arg) {
 	statusflags&=~S_Sentence;
-	verb(arg);
+
+	if(arg->m) varg.m=arg->m;
+	if(arg->i) varg.i=arg->i;
+	if(arg->v) varg.v=arg->v;
+
+	i_multiply(verb, varg);
 }
 #endif /* VIM_BINDINGS */
 
@@ -599,7 +605,7 @@ void /* Add new undo information to the undo ring */
 i_addundo(bool ins, Filepos start, Filepos end, char *s) {
 	Undo *u;
 
-	if(strlen(s) == 0) return;
+	//if(strlen(s) == 0) return;
 	if(statusflags & S_GroupUndo) {
 		end.l = i_lineat((undos->endl - undos->startl) + i_lineno(end.l));
 		i_addtoundo(end, s);
@@ -780,13 +786,16 @@ i_dotests(bool (*const a[])(void)) {
 
 bool
 i_dokeys(const Key bindings[], int index, bool multi) {
-	int i;
+	int i=-1;
 
 	if(bindings[index].func != f_insert) statusflags&=~(S_GroupUndo);
 
 	/* Handle sentences */
 	if(t_sent()) {
-		if(bindings[index].func == verb) i_multiply(verb, (const Arg){ .m = m_nextline });
+		if(bindings[index].func == verb) {
+			varg.m = m_nextline;
+			i_multiply(verb, varg);
+		}
 
 		if(bindings[index].func != f_adjective) {
 			statusflags&=~S_Sentence;
@@ -795,6 +804,7 @@ i_dokeys(const Key bindings[], int index, bool multi) {
 	} else if(bindings[index].arg.m == m_sentence) {
 		statusflags|=(long)S_Sentence;
 		verb=bindings[index].func;
+		varg=bindings[index].arg;
 		return FALSE;
 	}
 
@@ -813,8 +823,6 @@ i_dokeys(const Key bindings[], int index, bool multi) {
 
 	/* Handle multi-function commands */
 	if(multi) {
-		i=-1;
-
 		while(1)
 			if(bindings[index].test[++i]) {
 				if(bindings[index].test[i] != bindings[index+1].test[i]) {
@@ -1055,7 +1063,6 @@ i_mouse(void) {
 }
 #endif /* HANDLE_MOUSE */
 
-// FIXME: Some weird thing can be executed (example: 5a or 0a which does nothing)
 void /* Handle multiplication */
 i_multiply(void (*func)(const Arg *arg), const Arg arg) {
 	int i;

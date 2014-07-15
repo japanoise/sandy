@@ -14,6 +14,7 @@ In no particular order, at sandy.c:
 - Support multiple marks (with S_Parameter)
 - Instead of delete, just cut
 - Add folding support
+- Add better paste support (if whole line was cut, append it beneath)
 
 At config.def.h:
 - Use local/system script path and all

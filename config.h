@@ -160,9 +160,6 @@ static const Key stdkeys[] = {
 };
 
 #if VIM_BINDINGS
-/* In order for a key to execute more than 1 function, add consecutive definitions of the key
-   with the exact same tests */
-
 // TODO: add better paste support (if whole line was yanked, append above, not where you are)
 static const Key commkeys[] = { /* Command mode keys here */
 /* keyv.c,                  tests,                     func,       arg */
@@ -178,11 +175,12 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'b' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_prevword     } },
 { .keyv.c = { 'b' },      { 0,     0,    0,   0 },  f_move,      { .m = m_prevword     } },
 { .keyv.c = { 'c' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
-{ .keyv.c = { 'c' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_sentence    } }, /* TODO: queue insert mode, similar to 'y' */
+{ .keyv.c = { 'c' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_sentence     } }, /* TODO: queue insert mode, similar to 'y' */
 { .keyv.c = { 'C' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol          } },
 { .keyv.c = { 'C' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'd' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
-{ .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_sentence    } },
+{ .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_sentence     } },
+//{ .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_pipe,      { .m = m_sentence, .v = TOCLIP } },
 { .keyv.c = { 'D' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol          } },
 { .keyv.c = { 'g' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_bof          } },
 { .keyv.c = { 'g' },      { 0,     0,    0,   0 },  f_move,      { .m = m_bof          } },
@@ -285,7 +283,7 @@ static const Command cmds[] = { /* REMEMBER: if(arg == 0) arg.v=regex_match */
 
 static const Syntax syntaxes[] = {
 #if HILIGHT_SYNTAX
-{"c", "\\.(c(pp|xx)?|h(pp|xx)?|cc)$", {
+{"c", "\\.([ch](pp|xx)?|cc)$", {
 	/* HiRed   */  "$^",
 	/* HiGreen */  B"(for|if|while|do|else|case|default|switch|try|throw|catch|operator|new|delete)"B,
 	/* LoGreen */  B"(float|double|bool|char|int|short|long|sizeof|enum|void|static|const|struct|union|typedef|extern|(un)?signed|inline|((s?size)|((u_?)?int(8|16|32|64|ptr)))_t|class|namespace|template|public|protected|private|typename|this|friend|virtual|using|mutable|volatile|register|explicit)"B,
