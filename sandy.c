@@ -369,12 +369,14 @@ f_insert(const Arg *arg) {
 	Filepos newcur;
 
 	newcur=i_addtext((char*)arg->v, fcur);
+
 	if((statusflags & S_GroupUndo) && undos && (undos->flags & UndoIns) && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l) && ((char*)arg->v)[0] != '\n')
 		i_addtoundo(newcur, arg->v);
 	else {
 		i_addundo(TRUE, fcur, newcur, strdup((char*)arg->v));
 		if(fcur.l!=newcur.l) fsel=newcur;
 	}
+
 	fcur=fsel=newcur;
 	statusflags|=(S_Modified|S_GroupUndo);
 	lastaction=LastInsert;
@@ -547,19 +549,23 @@ f_undo(const Arg *arg) {
 	u=(isredo?redos:undos);
 	fsel.o=u->starto, fsel.l=i_lineat(u->startl);
 	fcur=fsel;
+
 	while(u) {
 		start.o=u->starto, start.l=i_lineat(u->startl);
 		end.o=u->endo,     end.l=i_lineat(u->endl);
+
 		if(isredo ^ (u->flags & UndoIns)) {
 			i_sortpos(&start, &end);
 			i_deltext(start, end);
 			fcur=fsel=start;
 		} else
 			fcur=fsel=i_addtext(u->str, fcur);
+
 		if(isredo)
 			redos=u->prev, u->prev=undos, undos=u;
 		else
 			undos=u->prev, u->prev=redos, redos=u;
+
 		if (!(u->flags & (isredo?RedoMore:UndoMore))) break;
 		u=(isredo?redos:undos);
 	}
@@ -582,8 +588,10 @@ i_addtoundo(Filepos newend, const char *s) {
 	oldsiz=strlen(undos->str), newsiz=strlen(s);
 	undos->endl=i_lineno(newend.l);
 	undos->endo=newend.o;
+
 	if((undos->str=(char*)realloc(undos->str, 1+oldsiz+newsiz)) == NULL)
 		i_die("Can't malloc.\n");
+
 	strncat(undos->str, s, newsiz);
 }
 
@@ -591,9 +599,17 @@ void /* Add new undo information to the undo ring */
 i_addundo(bool ins, Filepos start, Filepos end, char *s) {
 	Undo *u;
 
+	if(strlen(s) == 0) return;
+	if(statusflags & S_GroupUndo) {
+		end.l = i_lineat((undos->endl - undos->startl) + i_lineno(end.l));
+		i_addtoundo(end, s);
+		return;
+	}
+
 	if(redos) i_killundos(&redos); /* Once you make a change, the old redos go away */
 	if ((u=(Undo*)calloc(1, sizeof(Undo))) == NULL)
 		i_die("Can't malloc.\n");
+
 	u->flags  = (ins?UndoIns:0);
 	u->startl = i_lineno(start.l);
 	u->endl   = i_lineno(end.l);
@@ -1045,10 +1061,13 @@ i_multiply(void (*func)(const Arg *arg), const Arg arg) {
 	int i;
 
 	if(statusflags & S_Multiply) {
-		//statusflags|=S_GroupUndo;
-		for(i=0; i<multiply; i++)
+		func(&arg);
+		statusflags|=S_GroupUndo;
+
+		for(i=1; i<multiply; i++)
 			func(&arg);
 
+		statusflags&=~S_GroupUndo;
 		statusflags&=~S_Multiply;
 		multiply=1;
 	} else

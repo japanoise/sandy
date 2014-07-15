@@ -13,9 +13,9 @@ In no particular order, at sandy.c:
 - FINDBW prompt? is it needed?
 - Support multiple marks (with S_Parameter)
 - Instead of delete, just cut
+- Add folding support
 
 At config.def.h:
-- Bindings!
 - Use local/system script path and all
 - Choose color-set for either black or white bg
 - Define more syntaxes

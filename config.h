@@ -172,6 +172,7 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { '^' },      { 0,     0,    0,   0 },  f_move,      { .m = m_bol          } },
 { .keyv.c = { 'A' },      { 0,     0,    0,   0 },  f_move,      { .m = m_eol          } },
 { .keyv.c = { 'A' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command      } },
+{ .keyv.c = { 'a' },      { t_eol, 0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_move,      { .m = m_nextchar     } },
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'b' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_prevword     } },
