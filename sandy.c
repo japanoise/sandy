@@ -517,7 +517,7 @@ f_syntax(const Arg *arg) {
 	statusflags|=S_DirtyScr;
 	for(i=0; i<LENGTH(syntaxes); i++)
 		if((arg && arg->v) ? !strcmp(arg->v, syntaxes[i].name)
-				   : !regexec(syntax_file_res[i], filename, 1, NULL, 0)) {
+				   : !regexec(syntax_file_res[i], filename, 0, NULL, 0)) {
 			for(j=0; j<SYN_COLORS; j++) {
 				if((syntx >= 0) && syntax_res[syntx][j]) regfree(syntax_res[syntx][j]);
 				if(syntaxes[i].re_text[j] && regcomp(syntax_res[i][j], syntaxes[i].re_text[j], REG_EXTENDED|REG_NEWLINE)) i_die("Faulty regex.\n");
