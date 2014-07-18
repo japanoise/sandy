@@ -230,7 +230,7 @@ static bool           i_deltext(Filepos, Filepos);
 static void           i_die(char *str);
 static void           i_dirtyrange(Line*, Line*);
 static bool           i_dotests(bool (*const a[])(void));
-static void           i_dokeys(const Key bindings[]);
+static void           i_dokeys(const Key[], int);
 static void           i_edit(void);
 static void           i_find(bool);
 static char          *i_gettext(Filepos, Filepos);
@@ -787,10 +787,10 @@ i_dotests(bool (*const a[])(void)) {
 }
 
 void
-i_dokeys(const Key bindings[]) {
+i_dokeys(const Key bindings[], int length_bindings) {
 	int index, i, j;
 
-	for(index=0; index<LENGTH(bindings); index++) {
+	for(index=0; index < length_bindings; index++) {
 		if(((bindings[index].keyv.c && memcmp(c, bindings[index].keyv.c, sizeof bindings[index].keyv.c) == 0) || (bindings[index].keyv.i && ch == bindings[index].keyv.i)) && i_dotests(bindings[index].test) ) {
 			if(bindings[index].func != f_insert) statusflags&=~(S_GroupUndo);
 
@@ -892,7 +892,7 @@ i_edit(void) {
 			} else
 #endif /* HANDLE_MOUSE */
 
-			i_dokeys(curskeys);
+			i_dokeys(curskeys, LENGTH(curskeys));
 			continue;
 		}
 
@@ -909,7 +909,7 @@ i_edit(void) {
 		} else c[1]=c[2]=c[3]=c[4]=c[5]=c[6]=0x00;
 
 		if(!(statusflags&S_InsEsc) && ISCTRL(c[0])) {
-			i_dokeys(stdkeys);
+			i_dokeys(stdkeys, LENGTH(stdkeys));
 			continue;
 		}
 		statusflags&=~(S_InsEsc);
@@ -925,7 +925,7 @@ i_edit(void) {
 					statusflags|=S_Multiply;
 					multiply=(int)ch-'0';
 				}
-			} else i_dokeys(commkeys);
+			} else i_dokeys(commkeys, LENGTH(commkeys));
 		}
 #endif /* VIM_BINDINGS */
 		else tmptitle="WARNING! File is read-only!!!";
