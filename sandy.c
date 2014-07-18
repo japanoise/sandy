@@ -171,6 +171,7 @@ static Filepos   fmrk = { NULL, 0 };                /* Mark */
 static int       syntx = -1;                        /* Current syntax index */
 static regex_t  *find_res[2];                       /* Compiled regex for search term */
 static int       sel_re = 0;                        /* Index to the above, we keep 2 REs so regexec does not segfault */
+static int       ch;                                /* Used to store input */
 static char      c[7];                              /* Used to store input */
 static char     *fifopath = NULL;                   /* Path to command fifo */
 static char     *filename = NULL;                   /* Path to file loade on buffer */
@@ -191,6 +192,7 @@ static int       cols, lines;                       /* Ncurses: to use instead o
 static mmask_t   defmmask = 0;                      /* Ncurses: mouse event mask */
 static void    (*verb)(const Arg *arg);             /* Verb of current sentence */
 static Arg       varg;                              /* Arguments of the verb (some will be overwritten by adjective) */
+static int       vi;                                /* Helping var to store place of verb in key chain */
 static int       multiply = 1;                      /* Times to replay a command */
 
 /* Functions */
@@ -228,7 +230,7 @@ static bool           i_deltext(Filepos, Filepos);
 static void           i_die(char *str);
 static void           i_dirtyrange(Line*, Line*);
 static bool           i_dotests(bool (*const a[])(void));
-static bool           i_dokeys(const Key bindings[], int index, bool multi);
+static void           i_dokeys(const Key bindings[]);
 static void           i_edit(void);
 static void           i_find(bool);
 static char          *i_gettext(Filepos, Filepos);
@@ -784,60 +786,69 @@ i_dotests(bool (*const a[])(void)) {
 		} else return TRUE;
 }
 
-bool
-i_dokeys(const Key bindings[], int index, bool multi) {
-	int i=-1;
+void
+i_dokeys(const Key bindings[]) {
+	int index, i, j;
 
-	if(bindings[index].func != f_insert) statusflags&=~(S_GroupUndo);
+	for(index=0; index<LENGTH(bindings); index++) {
+		if(((bindings[index].keyv.c && memcmp(c, bindings[index].keyv.c, sizeof bindings[index].keyv.c) == 0) || (bindings[index].keyv.i && ch == bindings[index].keyv.i)) && i_dotests(bindings[index].test) ) {
+			if(bindings[index].func != f_insert) statusflags&=~(S_GroupUndo);
 
-	/* Handle sentences */
-	if(t_sent()) {
-		if(bindings[index].func == verb) {
-			varg.m = m_nextline;
-			i_multiply(verb, varg);
-		}
-
-		if(bindings[index].func != f_adjective) {
-			statusflags&=~S_Sentence;
-			return FALSE;
-		}
-	} else if(bindings[index].arg.m == m_sentence) {
-		statusflags|=(long)S_Sentence;
-		verb=bindings[index].func;
-		varg=bindings[index].arg;
-		return FALSE;
-	}
-
-	/* Handle parameter sentences (verb is used here to define the command to execute) */
-	if(statusflags & S_Parameter) {
-		statusflags&=~S_Parameter;
-		i_multiply(verb, (const Arg){ .v = c });
-		return FALSE;
-	} else if(bindings[index].arg.m == m_parameter) {
-		statusflags|=(long)S_Parameter;
-		verb=bindings[index].func;
-		return FALSE;
-	}
-
-	i_multiply(bindings[index].func, bindings[index].arg);
-
-	/* Handle multi-function commands */
-	if(multi) {
-		while(1)
-			if(bindings[index].test[++i]) {
-				if(bindings[index].test[i] != bindings[index+1].test[i]) {
-					return FALSE;
+			/* Handle sentences */
+			if(t_sent()) {
+				if(bindings[index].func == verb) {
+					varg.m = m_nextline;
+					i_multiply(verb, varg);
 				}
-			} else return TRUE;
-	}
 
-	return FALSE;
+				if(bindings[index].func != f_adjective) {
+					statusflags&=~S_Sentence;
+					break;
+				}
+			} else if(bindings[index].arg.m == m_sentence) {
+				statusflags|=(long)S_Sentence;
+				verb=bindings[index].func;
+				varg=bindings[index].arg;
+				vi=index;
+				break;
+			}
+
+			/* Handle parameter sentences (verb is used here to define the command to execute) */
+			if(statusflags & S_Parameter) {
+				statusflags&=~S_Parameter;
+				i_multiply(verb, (const Arg){ .v = c });
+				break;
+			} else if(bindings[index].arg.m == m_parameter) {
+				statusflags|=(long)S_Parameter;
+				verb=bindings[index].func;
+				break;
+			}
+
+			i_multiply(bindings[index].func, bindings[index].arg);
+			i=(t_sent() && bindings[index].func == f_adjective)?vi:index;
+
+			/* Handle multi-function commands */
+			if(i+1<LENGTH(bindings)) {
+				if(memcmp(bindings[i+1].keyv.c, bindings[i].keyv.c, sizeof bindings[i].keyv.c) == 0) {
+					j=-1;
+
+					while(1) {
+						if(bindings[i].test[++j])
+							if(bindings[index].test[j] != bindings[i+1].test[j]) break;
+					}
+
+					if(!bindings[i].test[j]) continue;
+				}
+			}
+
+			break;
+		}
+	}
 }
 
 void /* Main editing loop */
 i_edit(void) {
-	int ch, i;
-	bool multif;
+	int i;
 	fd_set fds;
 	Filepos oldsel, oldcur;
 
@@ -880,18 +891,8 @@ i_edit(void) {
 				i_mouse();
 			} else
 #endif /* HANDLE_MOUSE */
-			for(i=0; i<LENGTH(curskeys); i++) {
-				if(ch == curskeys[i].keyv.i && i_dotests(curskeys[i].test) ) {
-					if(i+1 < LENGTH(curskeys)) {
-						if(curskeys[i].keyv.i == curskeys[i+1].keyv.i) {
-							multif = TRUE;
-						}
-					} else multif = FALSE;
 
-					if(i_dokeys(curskeys, i, multif)) continue;
-					else break;
-				}
-			}
+			i_dokeys(curskeys);
 			continue;
 		}
 
@@ -908,18 +909,7 @@ i_edit(void) {
 		} else c[1]=c[2]=c[3]=c[4]=c[5]=c[6]=0x00;
 
 		if(!(statusflags&S_InsEsc) && ISCTRL(c[0])) {
-			for(i=0; i<LENGTH(stdkeys); i++) {
-				if(memcmp(c, stdkeys[i].keyv.c, sizeof stdkeys[i].keyv.c) == 0 && i_dotests(stdkeys[i].test) ) {
-					if(i+1 < LENGTH(stdkeys)) {
-						if(memcmp(stdkeys[i+1].keyv.c, stdkeys[i].keyv.c, sizeof stdkeys[i].keyv.c) == 0) {
-							multif = TRUE;
-						}
-					} else multif = FALSE;
-
-					if(i_dokeys(stdkeys, i, multif)) continue;
-					else break;
-				}
-			}
+			i_dokeys(stdkeys);
 			continue;
 		}
 		statusflags&=~(S_InsEsc);
@@ -935,18 +925,7 @@ i_edit(void) {
 					statusflags|=S_Multiply;
 					multiply=(int)ch-'0';
 				}
-			} else for(i=0; i<LENGTH(commkeys); i++) {
-				if(memcmp(c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0 && i_dotests(commkeys[i].test) ) {
-					if(i+1 < LENGTH(commkeys)) {
-						if(memcmp(commkeys[i+1].keyv.c, commkeys[i].keyv.c, sizeof commkeys[i].keyv.c) == 0) {
-							multif = TRUE;
-						}
-					} else multif = FALSE;
-
-					if(i_dokeys(commkeys, i, multif)) continue;
-					else break;
-				}
-			}
+			} else i_dokeys(commkeys);
 		}
 #endif /* VIM_BINDINGS */
 		else tmptitle="WARNING! File is read-only!!!";
