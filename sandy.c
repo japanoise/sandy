@@ -799,9 +799,8 @@ i_dokeys(const Key bindings[], int length_bindings) {
 				if(bindings[index].func == verb) {
 					varg.m = m_nextline;
 					i_multiply(verb, varg);
-				}
-
-				if(bindings[index].func != f_adjective) {
+					statusflags&=~S_Sentence;
+				} else if(bindings[index].func != f_adjective) {
 					statusflags&=~S_Sentence;
 					break;
 				}
@@ -825,19 +824,17 @@ i_dokeys(const Key bindings[], int length_bindings) {
 			}
 
 			i_multiply(bindings[index].func, bindings[index].arg);
-			i=(t_sent() && bindings[index].func == f_adjective)?vi:index;
+			if(t_sent() && bindings[index].func == f_adjective) i=vi;
+			else i=index;
 
 			/* Handle multi-function commands */
-			if(i+1<LENGTH(bindings)) {
-				if(memcmp(bindings[i+1].keyv.c, bindings[i].keyv.c, sizeof bindings[i].keyv.c) == 0) {
-					j=-1;
-
-					while(1) {
-						if(bindings[i].test[++j])
-							if(bindings[index].test[j] != bindings[i+1].test[j]) break;
+			if(i+1<length_bindings) {
+				if((bindings[i+1].keyv.c && memcmp(bindings[i+1].keyv.c, bindings[i].keyv.c, sizeof bindings[i].keyv.c) == 0) || (bindings[i+1].keyv.i && bindings[i+1].keyv.i == bindings[index].keyv.i)) {
+					for(j=0; j < LENGTH(bindings[i].test); j++) {
+							if(bindings[i].test[j] != bindings[i+1].test[j]) break;
 					}
 
-					if(!bindings[i].test[j]) continue;
+					if(j == LENGTH(bindings[i].test)) continue;
 				}
 			}
 
