@@ -187,8 +187,8 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'a' },      { 0,     0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'b' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_prevword     } },
 { .keyv.c = { 'b' },      { 0,     0,    0,   0 },  f_move,      { .m = m_prevword     } },
-{ .keyv.c = { 'c' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
-{ .keyv.c = { 'c' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_sentence     } }, /* TODO: queue insert mode, similar to 'y' */
+{ .keyv.c = { 'c' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_sentence     } },
+{ .keyv.c = { 'c' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'C' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol          } },
 { .keyv.c = { 'C' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'd' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
