@@ -293,9 +293,9 @@ static regex_t *syntax_file_res[LENGTH(syntaxes)];
 static regex_t *syntax_res[LENGTH(syntaxes)][SYN_COLORS];
 
 /* F_* FUNCTIONS
-	Can be linked to an action or keybinding. Always return void and take const Arg* */
+ * Can be linked to an action or keybinding. Always return void and take
+ * const Arg* */
 
-#if VIM_BINDINGS
 void
 f_adjective(const Arg * arg) {
 	statusflags &= ~S_Sentence;
@@ -309,7 +309,6 @@ f_adjective(const Arg * arg) {
 
 	i_multiply(verb, varg);
 }
-#endif /* VIM_BINDINGS */
 
 /* Make cursor line the one in the middle of the screen if possible, refresh screen */
 void
@@ -876,17 +875,13 @@ i_deltext(Filepos pos0, Filepos pos1) {
 /* test an array of t_ functions */
 bool
 i_dotests(bool(*const a[])(void)) {
-	int i = 0;
+	int i;
 
-	/* Somehow LENGTH() did not work here */
-	while(1) {
-		if(a[i]) {
-			if(!a[i++]())
-				return FALSE;
-		} else {
-			return TRUE;
-		}
+	for(i = 0; a[i]; i++) {
+		if(!(a[i]()))
+			return FALSE;
 	}
+	return TRUE;
 }
 
 void
@@ -921,7 +916,8 @@ i_dokeys(const Key bindings[], int length_bindings) {
 				break;
 			}
 
-			/* Handle parameter sentences (verb is used here to define the command to execute) */
+			/* Handle parameter sentences (verb is used here to define the
+			   command to execute) */
 			if(statusflags & S_Parameter) {
 				statusflags &= ~S_Parameter;
 				i_multiply(verb, (const Arg) { .v = c });
@@ -1142,8 +1138,7 @@ i_killundos(Undo ** list) {
 
 	for(; *list;) {
 		u = (*list)->prev;
-		if((*list)->str)
-			free((*list)->str);
+		free((*list)->str);
 		free(*list);
 		*list = u;
 	}
@@ -1357,8 +1352,7 @@ i_pipetext(const char *cmd) {
 	}
 
 	/* Things I want back to normal */
-	if(s)
-		free(s);
+	free(s);
 }
 
 /* Read the command fifo */

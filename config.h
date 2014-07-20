@@ -34,7 +34,7 @@ static void f_pipenull(const Arg*);
 	"dmenu -v >/dev/null 2>&1 || DISPLAY=\"\";"\
 	"if [ -n \"$DISPLAY\" ]; then arg=\"`echo \\\"" default "\\\" | dmenu $DMENU_OPTS -p '" prompt "'`\";" \
 	"else if slmenu -v >/dev/null 2>&1; then arg=\"`echo \\\"" default "\\\" | slmenu -t -p '" prompt "'`\";" \
-	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \" >&2; read arg; fi; fi &&" \
+	"else printf \"\033[0;0H\033[7m"prompt"\033[K\033[0m \" >&2; read -r arg; fi; fi &&" \
 	"echo " cmd "\"$arg\" > ${SANDY_FIFO}", NULL } }
 
 #define FIND    PROMPT("Find:",        "${SANDY_FIND}",   "/")
@@ -173,7 +173,8 @@ static const Key stdkeys[] = {
 };
 
 #if VIM_BINDINGS
-// TODO: add better paste support (if whole line was yanked, append above, not where you are)
+/* TODO: add better paste support (if whole line was yanked, append above,
+ *       not where you are) */
 static const Key commkeys[] = { /* Command mode keys here */
 /* keyv.c,                  tests,                     func,       arg */
 { .keyv.c = { '$' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_eol          } },
@@ -193,7 +194,7 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'C' },      { t_rw,  0,    0,   0 },  f_toggle,    { .i = S_Command      } },
 { .keyv.c = { 'd' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
 { .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_sentence     } },
-//{ .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_pipe,      { .m = m_sentence, .v = TOCLIP } },
+/*{ .keyv.c = { 'd' },      { t_rw,  0,    0,   0 },  f_pipe,      { .m = m_sentence, .v = TOCLIP } }, */
 { .keyv.c = { 'D' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_eol          } },
 { .keyv.c = { 'g' },      { t_sent,0,    0,   0 },  f_adjective, { .m = m_bof          } },
 { .keyv.c = { 'g' },      { 0,     0,    0,   0 },  f_move,      { .m = m_bof          } },
@@ -238,7 +239,8 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'x' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_nextchar     } },
 { .keyv.c = { 'X' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
 { .keyv.c = { 'X' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar     } },
-{ .keyv.c = { 'y' },      { t_rw,  0,    0,   0 },  f_pipero,    { .m = m_sentence, .v = TOCLIP } }, /* TODO: won't work since Arg is a union */
+/* TODO: won't work since Arg is a union */
+{ .keyv.c = { 'y' },      { t_rw,  0,    0,   0 },  f_pipero,    { .m = m_sentence, .v = TOCLIP } },
 { .keyv.c = { ';' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P                   },
 { .keyv.c = { ':' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P                   },
 { .keyv.c = { '\'' },     { 0,     0,    0,   0 },  f_move,      { .m = m_tomark       } },
@@ -262,9 +264,10 @@ static const Click clks[] = {
 {BUTTON1_CLICKED,        { TRUE , TRUE  }, { 0,     0,     0 }, 0,          { 0 } },
 {BUTTON3_CLICKED,        { TRUE , FALSE }, { t_sel, 0,     0 }, f_pipero,   { .v = TOSEL } },
 {BUTTON2_CLICKED,        { FALSE, FALSE }, { t_rw,  0,     0 }, f_pipenull, { .v = FROMSEL } },
-//{BUTTON4_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_prevscr } },
-//{BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } },
-/* ^^ NCurses is a sad old library.... it does not include button 5 nor cursor movement in its mouse declaration by default */
+/*{BUTTON4_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_prevscr } },*/
+/*{BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } },*/
+/* ^^ NCurses is a sad old library.... it does not include button 5 nor
+ *    cursor movement in its mouse declaration by default */
 {BUTTON1_DOUBLE_CLICKED, { TRUE , TRUE  }, { 0,     0,     0 }, f_extsel,   { .i = ExtWord }  },
 {BUTTON1_TRIPLE_CLICKED, { TRUE , TRUE  }, { 0,     0,     0 }, f_extsel,   { .i = ExtLines }  },
 };
@@ -378,7 +381,7 @@ static const Syntax syntaxes[] = {
 /* Colors */
 static const short  fgcolors[LastFG] = {
 	[DefFG]  = -1,
-	[CurFG]  = (HILIGHT_CURRENT?COLOR_BLACK:-1),
+	[CurFG]  = (HILIGHT_CURRENT?COLOR_BLACK : -1),
 	[SelFG]  = COLOR_BLACK,
 	[SpcFG]  = COLOR_WHITE,
 	[CtrlFG] = COLOR_RED,
@@ -424,9 +427,9 @@ static const int bwattrs[LastFG] = {
 	[Syn7FG] = A_BOLD,
 };
 
-static const short  bgcolors[LastBG] = {
+static const short bgcolors[LastBG] = {
 	[DefBG] = -1,
-	[CurBG] = (HILIGHT_CURRENT?COLOR_CYAN:-1),
+	[CurBG] = (HILIGHT_CURRENT ? COLOR_CYAN : -1),
 	[SelBG] = COLOR_YELLOW,
 };
 
@@ -434,9 +437,9 @@ static const short  bgcolors[LastBG] = {
 void /* Pipe selection from bol, then select last line only, special for autoindenting */
 f_pipeai(const Arg *arg) {
 	i_sortpos(&fsel, &fcur);
-	fsel.o=0;
+	fsel.o = 0;
 	f_pipe(arg);
-	fsel=fcur;
+	fsel = fcur;
 }
 
 void /* Pipe full lines including the selection */
@@ -447,6 +450,6 @@ f_pipeline(const Arg *arg) {
 
 void /* Pipe empty text */
 f_pipenull(const Arg *arg) {
-	fsel=fcur;
+	fsel = fcur;
 	f_pipe(arg);
 }
