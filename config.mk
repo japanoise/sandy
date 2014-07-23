@@ -15,7 +15,7 @@ LIBS = -L/usr/lib -lc -lncurses
 CPPFLAGS = -DVERSION=\"${VERSION}\" -D_BSD_SOURCE -D_POSIX_C_SOURCE=200809L
 #CFLAGS = -std=c99 -pedantic -Wall -Os ${INCS} ${CPPFLAGS}
 #LDFLAGS = -s ${LIBS}
-CFLAGS = -ggdb -std=c99 -pedantic -Wall -O0 ${INCS} ${CPPFLAGS}
+CFLAGS = -ggdb -std=c99 -pedantic -Wall -Wextra -pedantic -O0 ${INCS} ${CPPFLAGS}
 LDFLAGS = ${LIBS}
 
 # Solaris
@@ -24,4 +24,3 @@ LDFLAGS = ${LIBS}
 
 # compiler and linker
 CC = cc
-

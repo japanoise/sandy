@@ -240,7 +240,8 @@ static const Key commkeys[] = { /* Command mode keys here */
 { .keyv.c = { 'X' },      { t_sel, t_rw, 0,   0 },  f_delete,    { .m = m_tosel        } },
 { .keyv.c = { 'X' },      { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevchar     } },
 /* TODO: won't work since Arg is a union */
-{ .keyv.c = { 'y' },      { t_rw,  0,    0,   0 },  f_pipero,    { .m = m_sentence, .v = TOCLIP } },
+/*{ .keyv.c = { 'y' },      { t_rw,  0,    0,   0 },  f_pipero,    { .m = m_sentence, .v = TOCLIP } },*/
+{ .keyv.c = { 'y' },      { t_rw,  0,    0,   0 },  f_pipero,    { .v = TOCLIP         } },
 { .keyv.c = { ';' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P                   },
 { .keyv.c = { ':' },      { 0,     0,    0,   0 },  f_spawn,     CMD_P                   },
 { .keyv.c = { '\'' },     { 0,     0,    0,   0 },  f_move,      { .m = m_tomark       } },

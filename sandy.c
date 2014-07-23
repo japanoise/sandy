@@ -16,8 +16,10 @@
 #include <sys/wait.h>
 #include <limits.h>
 
-#define LENGTH(x)     ((int)(sizeof (x) / sizeof *(x)))
+#include "arg.h"
+
 #define LINSIZ        128
+#define LEN(x)        (sizeof (x) / sizeof *(x))
 #define UTF8LEN(ch)   ((unsigned char)ch>=0xFC ? 6 : \
                       ((unsigned char)ch>=0xF8 ? 5 : \
                       ((unsigned char)ch>=0xF0 ? 4 : \
@@ -170,9 +172,9 @@ static regex_t *find_res[2];       /* Compiled regex for search term */
 static int sel_re = 0;             /* Index to the above, we keep 2 REs so regexec does not segfault */
 static int ch;                     /* Used to store input */
 static char c[7];                  /* Used to store input */
-static char *fifopath = NULL;      /* Path to command fifo */
+static char fifopath[PATH_MAX];    /* Path to command fifo */
 static char *filename = NULL;      /* Path to file loade on buffer */
-static char *title = NULL;         /* Screen title */
+static char title[BUFSIZ];         /* Screen title */
 static char *tmptitle = NULL;      /* Screen title, temporary */
 static char *tsl_str = NULL;       /* String to print to status line */
 static char *fsl_str = NULL;       /* String to come back from status line */
@@ -191,6 +193,11 @@ static void (*verb)(const Arg * arg); /* Verb of current sentence */
 static Arg varg;                      /* Arguments of the verb (some will be overwritten by adjective) */
 static int vi;                        /* Helping var to store place of verb in key chain */
 static int multiply = 1;              /* Times to replay a command */
+
+/* allocate memory or die. */
+static void *ecalloc(size_t, size_t);
+static void *erealloc(void *, size_t);
+static char *estrdup(const char *);
 
 /* Functions */
 /* f_* functions can be linked to an action or keybinding */
@@ -224,10 +231,10 @@ static void i_advpos(Filepos * pos, int o);
 static void i_calcvlen(Line * l);
 static void i_cleanup(int);
 static bool i_deltext(Filepos, Filepos);
-static void i_die(char *str);
+static void i_die(const char *str);
 static void i_dirtyrange(Line *, Line *);
 static bool i_dotests(bool(*const a[])(void));
-static void i_dokeys(const Key[], int);
+static void i_dokeys(const Key[], unsigned int);
 static void i_edit(void);
 static void i_find(bool);
 static char *i_gettext(Filepos, Filepos);
@@ -241,7 +248,7 @@ static void i_readfifo(void);
 static void i_readfile(char *);
 static void i_resize(void);
 static Filepos i_scrtofpos(int, int);
-static bool i_setfindterm(char *);
+static bool i_setfindterm(const char *);
 static void i_setup(void);
 static void i_sigwinch(int);
 static void i_sigcont(int);
@@ -288,9 +295,43 @@ static Filepos m_tosel(Filepos);
 #include "config.h"
 
 /* Some extra stuff that depends on config.h */
-static regex_t *cmd_res[LENGTH(cmds)];
-static regex_t *syntax_file_res[LENGTH(syntaxes)];
-static regex_t *syntax_res[LENGTH(syntaxes)][SYN_COLORS];
+static regex_t *cmd_res[LEN(cmds)];
+static regex_t *syntax_file_res[LEN(syntaxes)];
+static regex_t *syntax_res[LEN(syntaxes)][SYN_COLORS];
+
+char *argv0;
+
+static void *
+ecalloc(size_t nmemb, size_t size) {
+	void *p;
+
+	p = calloc(nmemb, size);
+	if(p == NULL)
+		i_die("Can't calloc.\n");
+	return p;
+}
+
+static void *
+erealloc(void *ptr, size_t size) {
+	void *p;
+
+	p = realloc(ptr, size);
+	if(p == NULL) {
+		free(ptr);
+		i_die("Can't realloc.\n");
+	}
+	return p;
+}
+
+static char *
+estrdup(const char *s) {
+	char *p;
+
+	p = strdup(s);
+	if(p == NULL)
+		i_die("Can't strdup.\n");
+	return p;
+}
 
 /* F_* FUNCTIONS
  * Can be linked to an action or keybinding. Always return void and take
@@ -310,9 +351,12 @@ f_adjective(const Arg * arg) {
 	i_multiply(verb, varg);
 }
 
-/* Make cursor line the one in the middle of the screen if possible, refresh screen */
+/* Make cursor line the one in the middle of the screen if possible,
+ * refresh screen */
 void
 f_center(const Arg * arg) {
+	(void) arg;
+
 	int i = LINESABS / 2;
 
 	scrline = fcur.l;
@@ -333,6 +377,7 @@ f_delete(const Arg * arg) {
 	i_sortpos(&pos0, &pos1);
 	s = i_gettext(pos0, pos1);
 	i_addundo(FALSE, pos0, pos1, s);
+	free(s);
 	if(i_deltext(pos0, pos1))
 		fcur = pos0;
 	else
@@ -356,10 +401,12 @@ f_extsel(const Arg * arg) {
 			fcur = m_nextword(fcur);
 		break;
 	case ExtLines:
-		fsel.o = 0, fcur.o = fcur.l->len;
+		fsel.o = 0;
+		fcur.o = fcur.l->len;
 		break;
 	case ExtAll:
-		fsel.l = fstline, fcur.l = lstline;
+		fsel.l = fstline;
+		fcur.l = lstline;
 		f_extsel(&(const Arg) { .i = ExtLines });
 		break;
 	case ExtDefault:
@@ -394,16 +441,15 @@ f_insert(const Arg * arg) {
 
 	newcur = i_addtext((char *) arg->v, fcur);
 
-	if((statusflags & S_GroupUndo) && undos && (undos->flags & UndoIns)
-	    && fcur.o == undos->endo && undos->endl == i_lineno(fcur.l)
-	    && ((char *) arg->v)[0] != '\n')
+	if((statusflags & S_GroupUndo) && undos && (undos->flags & UndoIns) &&
+	    fcur.o == undos->endo && undos->endl == i_lineno(fcur.l) &&
+	    ((char *) arg->v)[0] != '\n') {
 		i_addtoundo(newcur, arg->v);
-	else {
-		i_addundo(TRUE, fcur, newcur, strdup((char *) arg->v));
+	} else {
+		i_addundo(TRUE, fcur, newcur, (char *) arg->v);
 		if(fcur.l != newcur.l)
 			fsel = newcur;
 	}
-
 	fcur = fsel = newcur;
 	statusflags |= (S_Modified | S_GroupUndo);
 	lastaction = LastInsert;
@@ -414,7 +460,9 @@ void
 f_line(const Arg * arg) {
 	long int l;
 
-	l = atoi(arg->v); /* TODO: strtol */
+	l = atoi(arg->v);
+	if(!l)
+		l = 1;
 	fcur.l = i_lineat(l);
 	if(fcur.o > fcur.l->len)
 		fcur.o = fcur.l->len;
@@ -424,6 +472,8 @@ f_line(const Arg * arg) {
 /* Set mark at current position */
 void
 f_mark(const Arg * arg) {
+	(void) arg;
+
 	fmrk = fcur;
 }
 
@@ -438,13 +488,14 @@ f_move(const Arg * arg) {
 /* Got to atoi(arg->v) position in the current line */
 void
 f_offset(const Arg * arg) {
-	fcur.o = atoi(arg->v); /* TODO: strtol */
+	fcur.o = atoi(arg->v);
 	if(fcur.o > fcur.l->len)
 		fcur.o = fcur.l->len;
 	FIXNEXT(fcur);
 }
 
-/* Pipe selection through arg->v external command. Your responsibility: call only if t_rw() */
+/* Pipe selection through arg->v external command. Your responsibility:
+ * call only if t_rw() */
 void
 f_pipe(const Arg * arg) {
 	i_pipetext(arg->v);
@@ -452,9 +503,12 @@ f_pipe(const Arg * arg) {
 	lastaction = LastPipe;
 }
 
-/* Pipe selection through arg->v external command but do not update text on screen */
+/* Pipe selection through arg->v external command but do not update text
+ * on screen */
 void
 f_pipero(const Arg * arg) {
+	(void) arg;
+
 	long oldsf = statusflags;
 
 	statusflags |= S_Readonly;
@@ -466,6 +520,8 @@ f_pipero(const Arg * arg) {
 /* Repeat the last action. Your responsibility: call only if t_rw() */
 void
 f_repeat(const Arg * arg) {
+	(void) arg;
+
 	i_sortpos(&fsel, &fcur);
 	switch (lastaction) {
 	case LastDelete:
@@ -494,7 +550,7 @@ f_save(const Arg * arg) {
 	if(arg && arg->v && *((char *) arg->v)) {
 		statusflags &= ~S_DumpStdout;
 		free(filename);
-		filename = strdup((char *) arg->v);
+		filename = estrdup((char *) arg->v);
 		setenv(envs[EnvFile], filename, 1);
 	} else if(filename == NULL && !(statusflags & S_DumpStdout)) {
 		unsetenv(envs[EnvFile]);
@@ -546,6 +602,8 @@ f_spawn(const Arg * arg) {
 
 void
 f_suspend(const Arg * arg) {
+	(void) arg;
+
 	endwin();
 	signal(SIGCONT, i_sigcont);
 	raise(SIGSTOP);
@@ -554,11 +612,12 @@ f_suspend(const Arg * arg) {
 /* Set syntax with name arg->v */
 void
 f_syntax(const Arg * arg) {
-	int i, j;
+	unsigned int i, j;
 
 	statusflags |= S_DirtyScr;
-	for(i = 0; i < LENGTH(syntaxes); i++)
-		if((arg && arg->v) ? !strcmp(arg->v, syntaxes[i].name)
+	for(i = 0; i < LEN(syntaxes); i++)
+		if((arg && arg->v)
+			? !strcmp(arg->v, syntaxes[i].name)
 		    : !regexec(syntax_file_res[i], filename, 0, NULL, 0)) {
 			for(j = 0; j < SYN_COLORS; j++) {
 				if((syntx >= 0) && syntax_res[syntx][j])
@@ -597,7 +656,8 @@ f_toggle(const Arg * arg) {
 	}
 }
 
-/* Undo last action if arg->i >=0, redo otherwise. Your responsibility: call only if t_undo() / t_redo() */
+/* Undo last action if arg->i >=0, redo otherwise. Your responsibility:
+ * call only if t_undo() / t_redo() */
 void
 f_undo(const Arg * arg) {
 	Filepos start, end;
@@ -647,14 +707,14 @@ void
 i_addtoundo(Filepos newend, const char *s) {
 	size_t oldsiz, newsiz;
 
+	if(!undos)
+		return;
 	oldsiz = strlen(undos->str);
 	newsiz = strlen(s);
 	undos->endl = i_lineno(newend.l);
 	undos->endo = newend.o;
 
-	if((undos->str = (char *) realloc(undos->str, 1 + oldsiz + newsiz)) == NULL)
-		i_die("Can't malloc.\n");
-
+	undos->str = (char *) erealloc(undos->str, 1 + oldsiz + newsiz);
 	strncat(undos->str, s, newsiz);
 }
 
@@ -665,7 +725,7 @@ i_addundo(bool ins, Filepos start, Filepos end, char *s) {
 
 	if(!s || !*s)
 		return;
-	if(statusflags & S_GroupUndo) {
+	if(undos && (statusflags & S_GroupUndo)) {
 		end.l = i_lineat((undos->endl - undos->startl) + i_lineno(end.l));
 		i_addtoundo(end, s);
 		return;
@@ -674,15 +734,14 @@ i_addundo(bool ins, Filepos start, Filepos end, char *s) {
 	/* Once you make a change, the old redos go away */
 	if(redos)
 		i_killundos(&redos);
-	if((u = (Undo *) calloc(1, sizeof(Undo))) == NULL)
-		i_die("Can't malloc.\n");
+	u = (Undo *) ecalloc(1, sizeof(Undo));
 
 	u->flags = (ins ? UndoIns : 0);
 	u->startl = i_lineno(start.l);
 	u->endl = i_lineno(end.l);
 	u->starto = start.o;
 	u->endo = end.o;
-	u->str = s;
+	u->str = estrdup(s);
 	u->prev = undos;
 	undos = u;
 }
@@ -699,10 +758,8 @@ i_addtext(char *buf, Filepos pos) {
 	for(c = buf[0]; c != '\0'; c = buf[++i]) {
 		/* newline / line feed */
 		if(c == '\n' || c == '\r') {
-			if(((lnew = (Line *) malloc(sizeof(Line))) == NULL)
-			    || ((lnew->c = calloc(1, LINSIZ)) == NULL))
-				i_die("Can't malloc.\n");
-			lnew->c[0] = '\0';
+			lnew = (Line *)ecalloc(1, sizeof(Line));
+			lnew->c = ecalloc(1, LINSIZ);
 			lnew->dirty = l->dirty = TRUE;
 			lnew->len = lnew->vlen = 0;
 			lnew->mul = 1;
@@ -726,9 +783,8 @@ i_addtext(char *buf, Filepos pos) {
 			o = il = 0;
 		} else {
 			/* Regular char */
-			/* TODO: handle realloc error */
 			if(2 + (l->len) >= LINSIZ * (l->mul))
-				l->c = (char *) realloc(l->c, LINSIZ * (++(l->mul)));
+				l->c = (char *) erealloc(l->c, LINSIZ * (++(l->mul)));
 			memmove(l->c + il + o + 1, l->c + il + o,
 			    (1 + l->len - (il + o)));
 			l->c[il + o] = c;
@@ -777,22 +833,21 @@ i_calcvlen(Line * l) {
 /* Cleanup and exit */
 void
 i_cleanup(int sig) {
-	int i;
+	unsigned int i;
 
 	i_killundos(&undos);
 	i_killundos(&redos);
 	close(fifofd);
 	unlink(fifopath);
-	free(fifopath);
 	free(filename);
-	free(title);
-	for(i = 0; i < LENGTH(cmds); i++)
+	for(i = 0; i < LEN(cmds); i++)
 		regfree(cmd_res[i]);
-	for(i = 0; i < LENGTH(syntaxes); i++)
+	for(i = 0; i < LEN(syntaxes); i++)
 		regfree(syntax_file_res[i]);
-	if(syntx >= 0)
+	if(syntx >= 0) {
 		for(i = 0; i < SYN_COLORS; i++)
 			regfree(syntax_res[syntx][i]);
+	}
 	regfree(find_res[0]);
 	regfree(find_res[1]);
 	endwin();
@@ -801,7 +856,7 @@ i_cleanup(int sig) {
 
 /* Quit less gracefully */
 void
-i_die(char *str) {
+i_die(const char *str) {
 	reset_shell_mode();
 	fputs(str, stderr);
 	exit(EXIT_FAILURE);
@@ -878,23 +933,23 @@ i_dotests(bool(*const a[])(void)) {
 	int i;
 
 	for(i = 0; a[i]; i++) {
-		if(!(a[i]()))
+		if(!a[i]())
 			return FALSE;
 	}
 	return TRUE;
 }
 
 void
-i_dokeys(const Key bindings[], int length_bindings) {
-	int index, i, j;
+i_dokeys(const Key bindings[], unsigned int length_bindings) {
+	unsigned int index, i, j;
 
 	for(index = 0; index < length_bindings; index++) {
-		if(((bindings[index].keyv.c
-			    && memcmp(c, bindings[index].keyv.c,
-				sizeof bindings[index].keyv.c) == 0)
-			|| (bindings[index].keyv.i
-			    && ch == bindings[index].keyv.i))
-		    && i_dotests(bindings[index].test)) {
+		if(((bindings[index].keyv.c &&
+		     memcmp(c, bindings[index].keyv.c,
+		            sizeof bindings[index].keyv.c) == 0) ||
+		    (bindings[index].keyv.i && ch == bindings[index].keyv.i)) &&
+		     i_dotests(bindings[index].test)) {
+
 			if(bindings[index].func != f_insert)
 				statusflags &= ~(S_GroupUndo);
 
@@ -942,11 +997,11 @@ i_dokeys(const Key bindings[], int length_bindings) {
 				    (bindings[i + 1].keyv.i	&&
 					bindings[i + 1].keyv.i == bindings[index].keyv.i)) {
 
-					for(j = 0; j < LENGTH(bindings[i].test); j++) {
+					for(j = 0; j < LEN(bindings[i].test); j++) {
 						if(bindings[i].test[j] != bindings[i + 1].test[j])
 							break;
 					}
-					if(j == LENGTH(bindings[i].test))
+					if(j == LEN(bindings[i].test))
 						continue;
 				}
 			}
@@ -985,8 +1040,8 @@ i_edit(void) {
 		FD_SET(0, &fds);
 		FD_SET(fifofd, &fds);
 		signal(SIGWINCH, i_sigwinch);
-		if(select(FD_SETSIZE, &fds, NULL, NULL, NULL) == -1
-		    && errno == EINTR) {
+		if(select(FD_SETSIZE, &fds, NULL, NULL, NULL) == -1 &&
+		   errno == EINTR) {
 			signal(SIGWINCH, SIG_IGN);
 			continue;
 		}
@@ -1008,7 +1063,7 @@ i_edit(void) {
 				i_mouse();
 			else
 #endif /* HANDLE_MOUSE */
-				i_dokeys(curskeys, LENGTH(curskeys));
+				i_dokeys(curskeys, LEN(curskeys));
 			continue;
 		}
 
@@ -1028,18 +1083,16 @@ i_edit(void) {
 		}
 
 		if(!(statusflags & S_InsEsc) && ISCTRL(c[0])) {
-			i_dokeys(stdkeys, LENGTH(stdkeys));
+			i_dokeys(stdkeys, LEN(stdkeys));
 			continue;
 		}
 		statusflags &= ~(S_InsEsc);
 
-		/* TODO: format if else */
 		if(t_rw() && t_ins()) {
 			f_insert(&(const Arg) { .v = c });
 		}
 #if VIM_BINDINGS
 		else if(!t_ins()) {
-			/* TODO: use isdigit() */
 			if(ch >= '0' && ch <= '9' && !(statusflags & S_Parameter)) {
 				if(statusflags & S_Multiply) {
 					multiply *= 10;
@@ -1049,7 +1102,7 @@ i_edit(void) {
 					multiply = (int) ch - '0';
 				}
 			} else {
-				i_dokeys(commkeys, LENGTH(commkeys));
+				i_dokeys(commkeys, LEN(commkeys));
 			}
 		}
 #endif /* VIM_BINDINGS */
@@ -1063,7 +1116,7 @@ i_edit(void) {
 void
 i_find(bool fw) {
 	char *s, *subs;
-	int wp, _so, _eo, status;
+	int wp, _so, _eo, status, flags;
 	Filepos start, end;
 	regmatch_t result[1];
 
@@ -1073,20 +1126,23 @@ i_find(bool fw) {
 	end.o = lstline->len;
 	i_sortpos(&fsel, &fcur);
 
-	for(wp = 0; wp < 2; free(s), wp++) {
-		if(wp)
+	for(wp = 0; wp < 2; wp++) {
+		if(wp > 0)
 			s = i_gettext(start, end);
 		else if(fw)
 			s = i_gettext(fcur, end);
 		else
 			s = i_gettext(start, fsel);
 
-		if((status = regexec(find_res[sel_re], s, 1, result,
-		    (fw ? (fcur.o == 0 ? 0 : REG_NOTBOL) : fsel.o ==
-			fsel.l->len ? 0 : REG_NOTEOL))) == 0) {
+		flags = 0;
+		if(fw && (fcur.o != 0))
+			flags = REG_NOTBOL;
+		else if(!fw && (fsel.o != fsel.l->len))
+			flags = REG_NOTEOL;
 
+		if((status = regexec(find_res[sel_re], s, 1, result, flags)) == 0) {
 			f_mark(NULL);
-			if(wp || !fw)
+			if(wp > 0 || !fw)
 				fcur = start;
 			fsel = fcur;
 			_so = result[0].rm_so;
@@ -1096,8 +1152,9 @@ i_find(bool fw) {
 				while(!regexec(find_res[sel_re], subs, 1,
 					result, REG_NOTBOL)
 				    && result[0].rm_eo) {
-					/* This is blatantly over-simplified: do not try to match an
-					 * empty string backwards as it will match the first hit on the file. */
+					/* This is blatantly over-simplified: do not try to match
+					 * an empty string backwards as it will match the first hit
+					 * on the file. */
 					_so = _eo + result[0].rm_so;
 					_eo += result[0].rm_eo;
 					subs = &s[_eo];
@@ -1107,6 +1164,7 @@ i_find(bool fw) {
 			i_advpos(&fcur, _eo);
 			wp++;
 		}
+		free(s);
 	}
 }
 
@@ -1120,7 +1178,7 @@ i_gettext(Filepos pos0, Filepos pos1) {
 
 	for(l = pos0.l; l != pos1.l->next; l = l->next)
 		i += 1 + (l == pos1.l ? pos1.o : l->len) - (l == pos0.l ? pos0.o : 0);
-	buf = calloc(1, i);
+	buf = ecalloc(1, i);
 	for(l = pos0.l, i = 0; l != pos1.l->next; l = l->next) {
 		memcpy(buf + i, l->c + (l == pos0.l ? pos0.o : 0),
 		    (l == pos1.l ? pos1.o : l->len) - (l == pos0.l ? pos0.o : 0));
@@ -1149,6 +1207,7 @@ Line *
 i_lineat(unsigned long il) {
 	unsigned long i;
 	Line *l;
+
 	for(i = 1, l = fstline; i != il && l && l->next; i++)
 		l = l->next;
 	return l;
@@ -1168,8 +1227,8 @@ i_lineno(Line * l0) {
 /* Process mouse input */
 void
 i_mouse(void) {
-	int i;
-	static MEVENT ev;
+	unsigned int i;
+	MEVENT ev;
 	Filepos f;
 
 	if(getmouse(&ev) == ERR)
@@ -1177,8 +1236,9 @@ i_mouse(void) {
 	if(!wmouse_trafo(textwin, &ev.y, &ev.x, FALSE))
 		return;
 
-	for(i = 0; i < LENGTH(clks); i++)
-		/* Warning! cursor placement code takes place BEFORE tests are taken into account */
+	for(i = 0; i < LEN(clks); i++)
+		/* Warning! cursor placement code takes place BEFORE tests are taken
+		 * into account */
 		if(ev.bstate & clks[i].mask) {
 			/* While this allows to extend the selection, it may cause some confusion */
 			f = i_scrtofpos(ev.x, ev.y);
@@ -1269,16 +1329,17 @@ i_pipetext(const char *cmd) {
 		close(pout[1]);
 		close(perr[1]);
 		if(t_rw()) {
-			i_addundo(FALSE, fsel, fcur, strdup(s));
-			undos->flags ^= RedoMore;
+			i_addundo(FALSE, fsel, fcur, s);
+			if(undos)
+				undos->flags ^= RedoMore;
 			i_deltext(fsel, fcur);
 			fcur = fsel;
 		}
 		fcntl(pin[1], F_SETFL, O_NONBLOCK);
 		fcntl(pout[0], F_SETFL, O_NONBLOCK);
 		fcntl(perr[0], F_SETFL, O_NONBLOCK);
-		buf = calloc(1, BUFSIZ + 1);
-		ebuf = calloc(1, BUFSIZ + 1);
+		buf = ecalloc(1, BUFSIZ + 1);
+		ebuf = ecalloc(1, BUFSIZ + 1);
 		FD_ZERO(&fdO);
 		FD_SET(pin[1], &fdO);
 		FD_ZERO(&fdI);
@@ -1287,8 +1348,8 @@ i_pipetext(const char *cmd) {
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 		nw = s ? strlen(s) : 0;
-		while(select(FD_SETSIZE, &fdI, &fdO, NULL, &tv) && (nw > 0
-			|| nr > 0)) {
+		while(select(FD_SETSIZE, &fdI, &fdO, NULL, &tv) > 0 &&
+		     (nw > 0 || nr > 0)) {
 			fflush(NULL);
 			if(FD_ISSET(pout[0], &fdI) && nr > 0) {
 				nr = read(pout[0], buf, BUFSIZ);
@@ -1298,15 +1359,16 @@ i_pipetext(const char *cmd) {
 					break; /* ...not seen it yet */
 				if(nr && t_rw()) {
 					auxp = i_addtext(buf, fcur);
-					i_addundo(TRUE, fcur, auxp,
-					    strdup(buf));
-					undos->flags ^= RedoMore | UndoMore;
+					i_addundo(TRUE, fcur, auxp, buf);
+					if(undos)
+						undos->flags ^= RedoMore | UndoMore;
 					fcur = auxp;
 				}
-			} else if(nr > 0)
+			} else if(nr > 0) {
 				FD_SET(pout[0], &fdI);
-			else
+			} else {
 				FD_CLR(pout[0], &fdI);
+			}
 			if(FD_ISSET(perr[0], &fdI) && nerr > 0) {
 				/* Blatant TODO: take last line of stderr and copy as tmptitle */
 				nerr = read(perr[0], ebuf, BUFSIZ);
@@ -1314,10 +1376,11 @@ i_pipetext(const char *cmd) {
 					tmptitle = "WARNING! command reported an error!!!";
 				if(nerr < 0)
 					break;
-			} else if(nerr > 0)
+			} else if(nerr > 0) {
 				FD_SET(perr[0], &fdI);
-			else
+			} else {
 				FD_CLR(perr[0], &fdI);
+			}
 			if(FD_ISSET(pin[1], &fdO) && nw > 0) {
 				written = write(pin[1], &(s[iw]),
 				    (nw < BUFSIZ ? nw : BUFSIZ));
@@ -1325,16 +1388,18 @@ i_pipetext(const char *cmd) {
 					break; /* broken pipe? */
 				iw += (nw < BUFSIZ ? nw : BUFSIZ);
 				nw -= written;
-			} else if(nw > 0)
+			} else if(nw > 0) {
 				FD_SET(pin[1], &fdO);
-			else {
+			} else {
 				if(!closed++)
 					close(pin[1]);
 				FD_ZERO(&fdO);
 			}
 		}
-		if(t_rw())
-			undos->flags ^= RedoMore;
+		if(t_rw()) {
+			if(undos)
+				undos->flags ^= RedoMore;
+		}
 		free(buf);
 		free(ebuf);
 		if(!closed)
@@ -1350,8 +1415,6 @@ i_pipetext(const char *cmd) {
 		close(perr[0]);
 		close(perr[1]);
 	}
-
-	/* Things I want back to normal */
 	free(s);
 }
 
@@ -1360,25 +1423,29 @@ void
 i_readfifo(void) {
 	char *buf, *tofree;
 	regmatch_t result[2];
-	int i;
+	unsigned int i;
+	int r;
 
-	if((buf = tofree = calloc(1, BUFSIZ + 1)) == NULL)
-		i_die("Can't malloc.\n");
-	i = read(fifofd, buf, BUFSIZ);
-	buf[i] = '\0';
-	buf = strtok(buf, "\n");
-	while(buf != NULL) {
-		for(i = 0; i < LENGTH(cmds); i++)
-			if(!regexec(cmd_res[i], buf, 2, result, 0)
-			    && i_dotests(cmds[i].test)) {
-				*(buf + result[1].rm_eo) = '\0';
-				if(cmds[i].arg.i > 0)
-					cmds[i].func(&(cmds[i].arg));
-				else
-					cmds[i].func(&(const Arg) { .v = (buf + result[1].rm_so) });
-				break;
+	tofree = ecalloc(1, BUFSIZ + 1);
+	buf = tofree;
+	r = read(fifofd, buf, BUFSIZ);
+	if(r != -1) {
+		buf[r] = '\0';
+		buf = strtok(buf, "\n");
+		while(buf != NULL) {
+			for(i = 0; i < LEN(cmds); i++) {
+				if(!regexec(cmd_res[i], buf, 2, result, 0) &&
+				   i_dotests(cmds[i].test)) {
+					*(buf + result[1].rm_eo) = '\0';
+					if(cmds[i].arg.i > 0)
+						cmds[i].func(&(cmds[i].arg));
+					else
+						cmds[i].func(&(const Arg) { .v = (buf + result[1].rm_so) });
+					break;
+				}
 			}
-		buf = strtok(NULL, "\n");
+			buf = strtok(NULL, "\n");
+		}
 	}
 	free(tofree);
 
@@ -1395,30 +1462,41 @@ void
 i_readfile(char *fname) {
 	int fd;
 	ssize_t n;
-	char *buf = NULL;
+	char *buf = NULL, *linestr = "1";
 
 	if(fname == NULL || !strcmp(fname, "-")) {
 		fd = 0;
 		reset_shell_mode();
 	} else {
-		filename = strdup(fname);
+		free(filename);
+		filename = estrdup(fname);
 		setenv(envs[EnvFile], filename, 1);
-		f_syntax(NULL); /* Try to guess a syntax */
 		if((fd = open(filename, O_RDONLY)) == -1) {
-			tmptitle = "WARNING! Can't read file!!!";
-			return;
+			/* start at line number if specified, NOTE that filenames
+			 * containing ':' are possible. */
+			if((linestr = strrchr(filename, ':'))) {
+				*(linestr++) = '\0';
+				setenv(envs[EnvFile], filename, 1);
+				fd = open(filename, O_RDONLY);
+			} else {
+				linestr = "1";
+			}
+			if(fd == -1) {
+				tmptitle = "WARNING! Can't read file!!!";
+				return;
+			}
 		}
+		f_syntax(NULL); /* Try to guess a syntax */
 	}
 
-	if((buf = calloc(1, BUFSIZ + 1)) == NULL)
-		i_die("Can't malloc.\n");
+	buf = ecalloc(1, BUFSIZ + 1);
 	while((n = read(fd, buf, BUFSIZ)) > 0) {
 		buf[n] = '\0';
 		fcur = i_addtext(buf, fcur);
 	}
-	if(fd > 0)
+	if(fd > 0) {
 		close(fd);
-	else {
+	} else {
 		if((fd = open("/dev/tty", O_RDONLY)) == -1)
 			i_die("Can't reopen stdin.\n");
 		dup2(fd, 0);
@@ -1429,6 +1507,7 @@ i_readfile(char *fname) {
 	fcur.l = fstline;
 	fcur.o = 0;
 	fsel = fcur;
+	f_line(&(const Arg) { .v = linestr });
 }
 
 /* Handle term resize, ugly. TODO: clean and change */
@@ -1445,7 +1524,7 @@ i_resize(void) {
 		return;
 	result = ioctl(fd, TIOCGWINSZ, &ws);
 	close(fd);
-	if(result < 0)
+	if(result == -1)
 		return;
 	cols = ws.ws_col;
 	lines = ws.ws_row;
@@ -1467,7 +1546,7 @@ i_scrtofpos(int x, int y) {
 	pos.o = pos.l->len;
 	for(l = scrline, irow = 0; l && irow < LINESABS; l = l->next, irow += vlines) {
 		vlines = VLINES(l);
-		for(ixrow = ivchar = 0; ixrow < vlines && (irow + ixrow) < LINESABS; ixrow++)
+		for(ixrow = ivchar = 0; ixrow < vlines && (irow + ixrow) < LINESABS; ixrow++) {
 			if(irow + ixrow == y) {
 				pos.l = l;
 				pos.o = 0;
@@ -1480,6 +1559,7 @@ i_scrtofpos(int x, int y) {
 					pos.o = pos.l->len;
 				break;
 			}
+		}
 	}
 	return pos;
 }
@@ -1488,26 +1568,28 @@ i_scrtofpos(int x, int y) {
 /* Update find_res[sel_re] and sel_re. Return TRUE if find term is a valid
    RE or NULL */
 bool
-i_setfindterm(char *find_term) {
+i_setfindterm(const char *find_term) {
+	int flags;
+
 	/* Modify find term; use NULL to repeat search */
-	if(find_term) {
-		if(!regcomp(find_res[sel_re ^ 1], find_term,
-			REG_EXTENDED | REG_NEWLINE | (statusflags & S_CaseIns
-			    ? REG_ICASE : 0))) {
-			sel_re ^= 1;
-			setenv(envs[EnvFind], find_term, 1);
-			return TRUE;
-		} else {
-			return FALSE;
-		}
+	if(!find_term)
+		return TRUE;
+
+	flags = REG_EXTENDED | REG_NEWLINE;
+	if(statusflags & S_CaseIns)
+		flags |= REG_ICASE;
+	if(!regcomp(find_res[sel_re ^ 1], find_term, flags)) {
+		sel_re ^= 1;
+		setenv(envs[EnvFind], find_term, 1);
+		return TRUE;
 	}
-	return TRUE;
+	return FALSE;
 }
 
 /* Setup everything */
 void
 i_setup(void) {
-	int i, j;
+	unsigned int i, j;
 	Line *l = NULL;
 
 	/* Signal handling, default */
@@ -1517,33 +1599,28 @@ i_setup(void) {
 	signal(SIGTERM, i_cleanup);
 
 	/* Some allocs */
-	title = calloc(1, BUFSIZ);
-	fifopath = calloc(1, PATH_MAX);
-	if(((find_res[0] = (regex_t *) calloc(1, sizeof(regex_t))) == NULL)
-	    || (find_res[1] = (regex_t *) calloc(1, sizeof(regex_t))) == NULL)
-		i_die("Can't malloc.\n");
+	title[0] = '\0';
+	fifopath[0] = '\0';
+	find_res[0] = (regex_t *) ecalloc(1, sizeof(regex_t));
+	find_res[1] = (regex_t *) ecalloc(1, sizeof(regex_t));
 
-	for(i = 0; i < LENGTH(cmds); i++) {
-		if((cmd_res[i] = (regex_t *) calloc(1, sizeof(regex_t))) == NULL)
-			i_die("Can't malloc.\n");
+	for(i = 0; i < LEN(cmds); i++) {
+		cmd_res[i] = (regex_t *) ecalloc(1, sizeof(regex_t));
 		if(regcomp(cmd_res[i], cmds[i].re_text,
 			REG_EXTENDED | REG_ICASE | REG_NEWLINE))
 			i_die("Faulty regex.\n");
 	}
 
-	for(i = 0; i < LENGTH(syntaxes); i++) {
-		if((syntax_file_res[i] = (regex_t *) calloc(1, sizeof(regex_t))) == NULL)
-			i_die("Can't malloc.\n");
+	for(i = 0; i < LEN(syntaxes); i++) {
+		syntax_file_res[i] = (regex_t *) ecalloc(1, sizeof(regex_t));
 		if(regcomp(syntax_file_res[i], syntaxes[i].file_re_text,
 			REG_EXTENDED | REG_NOSUB | REG_ICASE | REG_NEWLINE))
 			i_die("Faulty regex.\n");
-		for(j = 0; j < SYN_COLORS; j++) {
-			if((syntax_res[i][j] = (regex_t *) calloc(1, sizeof(regex_t))) == NULL)
-				i_die("Can't malloc.\n");
-		}
+		for(j = 0; j < SYN_COLORS; j++)
+			syntax_res[i][j] = (regex_t *) ecalloc(1, sizeof(regex_t));
 	}
 
-	snprintf(fifopath, PATH_MAX, "%s%d", fifobase, getpid());
+	snprintf(fifopath, sizeof(fifopath), "%s%d", fifobase, getpid());
 	if(mkfifo(fifopath, (S_IRUSR | S_IWUSR)) != 0)
 		i_die("FIFO already exists.\n");
 	if((fifofd = open(fifopath, O_RDONLY | O_NONBLOCK)) == -1)
@@ -1553,13 +1630,14 @@ i_setup(void) {
 	regcomp(find_res[1], "\0\0", 0);
 
 	if(!newterm(NULL, stderr, stdin)) {
-		newterm("xterm", stderr, stdin);
-		tmptitle = "WARNING! $TERM not recognized!!!";
+		if(!(newterm("xterm", stderr, stdin)))
+			i_die("Can't fallback $TERM to xterm, exiting...\n");
+		tmptitle = "WARNING! $TERM not recognized, using xterm as fallback!!!";
 	}
 	if(has_colors()) {
 		start_color();
 		use_default_colors();
-		for(i = 0; i < LastFG; i++)
+		for(i = 0; i < LastFG; i++) {
 			for(j = 0; j < LastBG; j++) {
 				/* Handle more than 8 colors */
 				if(fgcolors[i] > 7)
@@ -1572,20 +1650,20 @@ i_setup(void) {
 				init_pair((i * LastBG) + j, fgcolors[i], bgcolors[j]);
 				textattrs[i][j] = COLOR_PAIR((i * LastBG) + j) | colorattrs[i];
 			}
+		}
 	} else {
-		for(i = 0; i < LastFG; i++)
+		for(i = 0; i < LastFG; i++) {
 			for(j = 0; j < LastBG; j++)
 				textattrs[i][j] = bwattrs[i];
+		}
 	}
 	lines = LINES;
 	cols = COLS;
 	i_termwininit();
 
 	/* Init line structure */
-	if(((l = (Line *) malloc(sizeof(Line))) == NULL) ||
-	    ((l->c = calloc(1, LINSIZ)) == NULL))
-		i_die("Can't malloc.\n");
-	l->c[0] = '\0';
+	l = (Line *) ecalloc(1, sizeof(Line));
+	l->c = ecalloc(1, LINSIZ);
 	l->dirty = FALSE;
 	l->len = l->vlen = 0;
 	l->mul = 1;
@@ -1599,12 +1677,16 @@ i_setup(void) {
 /* Process SIGWINCH, the terminal has been resized */
 void
 i_sigwinch(int unused) {
+	(void) unused;
+
 	statusflags |= S_NeedResize;
 }
 
 /* Process SIGCONT to return after STOP */
 void
 i_sigcont(int unused) {
+	(void) unused;
+
 	i_resize();
 }
 
@@ -1627,7 +1709,7 @@ i_sortpos(Filepos * pos0, Filepos * pos1) {
 /* Initialize terminal */
 void
 i_termwininit(void) {
-	int i;
+	unsigned int i;
 
 	raw();
 	noecho();
@@ -1653,7 +1735,7 @@ i_termwininit(void) {
 	curs_set(1);
 	scrollok(textwin, FALSE);
 #if HANDLE_MOUSE
-	for(i = 0; i < LENGTH(clks); i++)
+	for(i = 0; i < LEN(clks); i++)
 		defmmask |= clks[i].mask;
 	mousemask(defmmask, NULL);
 #endif /* HANDLE_MOUSE */
@@ -1663,16 +1745,15 @@ i_termwininit(void) {
    unnecessary complexity and length */
 void
 i_update(void) {
-	/* TODO: make this non-static? */
-	static int iline, irow, ixrow, ivchar, i, ifg, ibg, vlines;
-	static size_t ichar;
-	static int cursor_r, cursor_c;
-	static int lines3; /* How many lines fit on screen */
-	static long int nscr, ncur, nlst; /* Line number for scrline, fcur.l and lstline */
-	static bool selection;
-	static regmatch_t match[SYN_COLORS][1];
-	static Line *l;
-	static char c[7], buf[16];
+	int iline, irow, ixrow, ivchar, i, ifg, ibg, vlines;
+	size_t ichar;
+	int cursor_r, cursor_c;
+	int lines3; /* How many lines fit on screen */
+	long int nscr, ncur, nlst; /* Line number for scrline, fcur.l and lstline */
+	bool selection;
+	regmatch_t match[SYN_COLORS][1];
+	Line *l;
+	char c[7], buf[16];
 
 	/* Check if we need to resize */
 	if(statusflags & S_NeedResize)
@@ -1826,16 +1907,18 @@ i_update(void) {
 					}
 				}
 			}
-		} else if(l == fsel.l || l == fcur.l)
+		} else if(l == fsel.l || l == fcur.l) {
 			selection = !selection;
+		}
 		if(l)
 			l = l->next;
 	}
 
 	/* Calculate nlst */
-	for(iline = ncur, l = fcur.l; l; l = l->next, iline++)
+	for(iline = ncur, l = fcur.l; l; l = l->next, iline++) {
 		if(l == lstline)
 			nlst = iline;
+	}
 
 	/* Position cursor */
 	wmove(textwin, cursor_r, cursor_c);
@@ -1848,7 +1931,7 @@ i_update(void) {
 
 	/* Update title */
 	if(tmptitle)
-		strncpy(title, tmptitle, BUFSIZ);
+		snprintf(title, sizeof(title), "%s", tmptitle);
 	else {
 		statusflags &= ~S_Warned;	/* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100 * ncur) / nlst);
@@ -1895,9 +1978,8 @@ i_update(void) {
 /* Print help, die */
 void
 i_usage(void) {
-	fputs("sandy - simple editor\n", stderr);
-	i_die
-	    ("usage: sandy [-a] [-d] [-r] [-u] [-t TABSTOP] [-S] [-s SYNTAX] [file | -]\n");
+	i_die("sandy - simple editor\n"
+	      "usage: sandy [-a] [-d] [-r] [-u] [-t TABSTOP] [-S] [-s SYNTAX] [file | -]\n");
 }
 
 /* Write buffer to disk */
@@ -2034,7 +2116,7 @@ m_prevword(Filepos pos) {
 /* Advance one line, or to eol if at last line */
 Filepos
 m_nextline(Filepos pos) {
-	int ivchar, ichar;
+	size_t ivchar, ichar;
 
 	for(ivchar = ichar = 0; ichar < pos.o; ichar++)
 		ivchar += VLEN(pos.l->c[ichar], ivchar);
@@ -2053,7 +2135,7 @@ m_nextline(Filepos pos) {
 /* Backup one line, or to bol if at first line */
 Filepos
 m_prevline(Filepos pos) {
-	int ivchar, ichar;
+	size_t ivchar, ichar;
 
 	for(ivchar = ichar = 0; ichar < pos.o; ichar++)
 		ivchar += VLEN(pos.l->c[ichar], (ivchar % (cols - 1)));
@@ -2137,13 +2219,15 @@ m_tomark(Filepos pos) {
 /* Go to selection point */
 Filepos
 m_tosel(Filepos pos) {
+	(void) pos;
+
 	return fsel;
 }
 
 /* T_* FUNCTIONS
  * Used to test for conditions, take no arguments and return bool. */
 
-/* TRUE is autoindent is on */
+/* TRUE if autoindent is on */
 bool
 t_ai(void) {
 	return (statusflags & S_AutoIndent);
@@ -2225,8 +2309,7 @@ t_warn(void) {
 
 /* main() starts everything else */
 int
-main(int argc, char **argv) {
-	int i;
+main(int argc, char *argv[]) {
 	char *local_syn = NULL;
 
 	/* Use system locale, hopefully UTF-8 */
@@ -2234,36 +2317,36 @@ main(int argc, char **argv) {
 	/* FIXME: Change this to something else to support num keys? */
 	ESCDELAY = 0;
 
-	for(i = 1; i < argc && argv[i][0] == '-' && argv[i][1] != '\0'; i++) {
-		if(!strcmp(argv[i], "-r")) {
-			statusflags |= S_Readonly;
-		} else if(!strcmp(argv[i], "-a")) {
-			statusflags |= S_AutoIndent;
-		} else if(!strcmp(argv[i], "-d")) {
-			statusflags |= S_DumpStdout;
-		} else if(!strcmp(argv[i], "-t")) {
-			if(++i < argc) {
-				tabstop = atoi(argv[i]); /* TODO: strtol */
-			} else
-				i_usage();
-		} else if(!strcmp(argv[i], "-S")) {
-			local_syn = "";
-		} else if(!strcmp(argv[i], "-s")) {
-			if(++i < argc) {
-				local_syn = argv[i];
-			} else
-				i_usage();
-		} else if(!strcmp(argv[i], "--")) {
-			i++;
-			break;
-		} else if(!strcmp(argv[i], "-v"))
-			i_die("sandy-" VERSION ", © 2014 sandy engineers, see LICENSE for details\n");
-		else
-			i_usage();
-	}
+	ARGBEGIN {
+	case 'r':
+		statusflags |= S_Readonly;
+		break;
+	case 'a':
+		statusflags |= S_AutoIndent;
+		break;
+	case 'd':
+		statusflags |= S_DumpStdout;
+		break;
+	case 't':
+		tabstop = atoi(EARGF(i_usage()));
+		break;
+	case 'S':
+		local_syn = "";
+		break;
+	case 's':
+		local_syn = EARGF(i_usage());
+		break;
+	case 'v':
+		i_die("sandy-" VERSION ", © 2014 sandy engineers, see LICENSE for details\n");
+		break;
+	default:
+		i_usage();
+		break;
+	} ARGEND;
+
 	i_setup();
-	if(i < argc)
-		i_readfile(argv[i]);
+	if(argc > 0)
+		i_readfile(argv[0]);
 	if(local_syn)
 		f_syntax(&(const Arg) { .v = local_syn });
 	i_edit();
