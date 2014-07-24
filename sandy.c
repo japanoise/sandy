@@ -160,39 +160,39 @@ static const char *envs[EnvLast] = {
 };
 
 /* Variables */
-static Line *fstline;              /* First line */
-static Line *lstline;              /* Last line */
-static Line *scrline;              /* First line seen on screen */
+static Line   *fstline;            /* First line */
+static Line   *lstline;            /* Last line */
+static Line   *scrline;            /* First line seen on screen */
 static Filepos fsel;               /* Selection point on file */
 static Filepos fcur;               /* Insert position on file, cursor, current position */
 static Filepos fmrk = { NULL, 0 }; /* Mark */
 
-static int syntx = -1;             /* Current syntax index */
-static regex_t *find_res[2];       /* Compiled regex for search term */
-static int sel_re = 0;             /* Index to the above, we keep 2 REs so regexec does not segfault */
-static int ch;                     /* Used to store input */
-static char c[7];                  /* Used to store input */
-static char fifopath[PATH_MAX];    /* Path to command fifo */
-static char *filename = NULL;      /* Path to file loade on buffer */
-static char title[BUFSIZ];         /* Screen title */
-static char *tmptitle = NULL;      /* Screen title, temporary */
-static char *tsl_str = NULL;       /* String to print to status line */
-static char *fsl_str = NULL;       /* String to come back from status line */
-static WINDOW *titlewin = NULL;    /* Title ncurses window, NULL if there is a status line */
-static WINDOW *textwin = NULL;     /* Main ncurses window */
-static Undo *undos;                /* Undo ring */
-static Undo *redos;                /* Redo ring */
-static int textattrs[LastFG][LastBG]; /* Text attributes for each color pair */
-static int savestep = 0;              /* Index to determine the need to save in undo/redo action */
-static int fifofd;                    /* Command fifo file descriptor */
-static long statusflags = S_Running | S_Command; /* Status flags, very important, OR'd (see enums above) */
-static int lastaction = LastNone;     /* The last action we took (see enums above) */
-static int cols, lines;               /* Ncurses: to use instead of COLS and LINES, wise */
-static mmask_t defmmask = 0;          /* Ncurses: mouse event mask */
-static void (*verb)(const Arg * arg); /* Verb of current sentence */
-static Arg varg;                      /* Arguments of the verb (some will be overwritten by adjective) */
-static int vi;                        /* Helping var to store place of verb in key chain */
-static int multiply = 1;              /* Times to replay a command */
+static int      syntx = -1;                          /* Current syntax index */
+static regex_t *find_res[2];                         /* Compiled regex for search term */
+static int      sel_re = 0;                          /* Index to the above, we keep 2 REs so regexec does not segfault */
+static int      ch;                                  /* Used to store input */
+static char     c[7];                                /* Used to store input */
+static char     fifopath[PATH_MAX];                  /* Path to command fifo */
+static char    *filename = NULL;                     /* Path to file loade on buffer */
+static char     title[BUFSIZ];                       /* Screen title */
+static char    *tmptitle = NULL;                     /* Screen title, temporary */
+static char    *tsl_str = NULL;                      /* String to print to status line */
+static char    *fsl_str = NULL;                      /* String to come back from status line */
+static WINDOW  *titlewin = NULL;                     /* Title ncurses window, NULL if there is a status line */
+static WINDOW  *textwin = NULL;                      /* Main ncurses window */
+static Undo    *undos;                               /* Undo ring */
+static Undo    *redos;                               /* Redo ring */
+static int      textattrs[LastFG][LastBG];           /* Text attributes for each color pair */
+static int      savestep = 0;                        /* Index to determine the need to save in undo/redo action */
+static int      fifofd;                              /* Command fifo file descriptor */
+static long     statusflags = S_Running | S_Command; /* Status flags, very important, OR'd (see enums above) */
+static int      lastaction = LastNone;               /* The last action we took (see enums above) */
+static int      cols, lines;                         /* Ncurses: to use instead of COLS and LINES, wise */
+static mmask_t  defmmask = 0;                        /* Ncurses: mouse event mask */
+static void   (*verb)(const Arg * arg);              /* Verb of current sentence */
+static Arg      varg;                                /* Arguments of the verb (some will be overwritten by adjective) */
+static int      vi;                                  /* Helping var to store place of verb in key chain */
+static int      multiply = 1;                        /* Times to replay a command */
 
 /* allocate memory or die. */
 static void *ecalloc(size_t, size_t);
@@ -224,39 +224,39 @@ static void f_toggle(const Arg * arg);
 static void f_undo(const Arg *);
 
 /* i_* funcions are called from inside the main code only */
-static Filepos i_addtext(char *, Filepos);
-static void i_addtoundo(Filepos, const char *);
-static void i_addundo(bool, Filepos, Filepos, char *);
-static void i_advpos(Filepos * pos, int o);
-static void i_calcvlen(Line * l);
-static void i_cleanup(int);
-static bool i_deltext(Filepos, Filepos);
-static void i_die(const char *str);
-static void i_dirtyrange(Line *, Line *);
-static bool i_dotests(bool(*const a[])(void));
-static void i_dokeys(const Key[], unsigned int);
-static void i_edit(void);
-static void i_find(bool);
-static char *i_gettext(Filepos, Filepos);
-static void i_killundos(Undo **);
-static Line *i_lineat(unsigned long);
+static Filepos       i_addtext(char *, Filepos);
+static void          i_addtoundo(Filepos, const char *);
+static void          i_addundo(bool, Filepos, Filepos, char *);
+static void          i_advpos(Filepos * pos, int o);
+static void          i_calcvlen(Line * l);
+static void          i_cleanup(int);
+static bool          i_deltext(Filepos, Filepos);
+static void          i_die(const char *str);
+static void          i_dirtyrange(Line *, Line *);
+static bool          i_dotests(bool(*const a[])(void));
+static void          i_dokeys(const Key[], unsigned int);
+static void          i_edit(void);
+static void          i_find(bool);
+static char         *i_gettext(Filepos, Filepos);
+static void          i_killundos(Undo **);
+static Line         *i_lineat(unsigned long);
 static unsigned long i_lineno(Line *);
-static void i_mouse(void);
-static void i_multiply(void (*func)(const Arg * arg), const Arg arg);
-static void i_pipetext(const char *);
-static void i_readfifo(void);
-static void i_readfile(char *);
-static void i_resize(void);
-static Filepos i_scrtofpos(int, int);
-static bool i_setfindterm(const char *);
-static void i_setup(void);
-static void i_sigwinch(int);
-static void i_sigcont(int);
-static void i_sortpos(Filepos *, Filepos *);
-static void i_termwininit(void);
-static void i_update(void);
-static void i_usage(void);
-static bool i_writefile(char *);
+static void          i_mouse(void);
+static void          i_multiply(void (*func)(const Arg * arg), const Arg arg);
+static void          i_pipetext(const char *);
+static void          i_readfifo(void);
+static void          i_readfile(char *);
+static void          i_resize(void);
+static Filepos       i_scrtofpos(int, int);
+static bool          i_setfindterm(const char *);
+static void          i_setup(void);
+static void          i_sigwinch(int);
+static void          i_sigcont(int);
+static void          i_sortpos(Filepos *, Filepos *);
+static void          i_termwininit(void);
+static void          i_update(void);
+static void          i_usage(void);
+static bool          i_writefile(char *);
 
 /* t_* functions to know whether to process an action or keybinding */
 static bool t_ai(void);
@@ -1733,7 +1733,10 @@ i_termwininit(void) {
 	nodelay(textwin, FALSE);
 	wtimeout(textwin, 0);
 	curs_set(1);
+	ESCDELAY = 20;
+	mouseinterval(20);
 	scrollok(textwin, FALSE);
+
 #if HANDLE_MOUSE
 	for(i = 0; i < LEN(clks); i++)
 		defmmask |= clks[i].mask;
@@ -2314,8 +2317,6 @@ main(int argc, char *argv[]) {
 
 	/* Use system locale, hopefully UTF-8 */
 	setlocale(LC_ALL, "");
-	/* FIXME: Change this to something else to support num keys? */
-	ESCDELAY = 0;
 
 	ARGBEGIN {
 	case 'r':
@@ -2345,10 +2346,13 @@ main(int argc, char *argv[]) {
 	} ARGEND;
 
 	i_setup();
+
 	if(argc > 0)
 		i_readfile(argv[0]);
+
 	if(local_syn)
 		f_syntax(&(const Arg) { .v = local_syn });
+
 	i_edit();
 	i_cleanup(EXIT_SUCCESS);
 	return EXIT_SUCCESS;
