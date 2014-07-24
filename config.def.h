@@ -266,7 +266,9 @@ static const Click clks[] = {
 {BUTTON3_CLICKED,        { TRUE , FALSE }, { t_sel, 0,     0 }, f_pipero,   { .v = TOSEL } },
 {BUTTON2_CLICKED,        { FALSE, FALSE }, { t_rw,  0,     0 }, f_pipenull, { .v = FROMSEL } },
 {BUTTON4_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_prevscr } },
-/*{BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } },*/
+#ifdef BUTTON5_CLICKED
+{BUTTON5_CLICKED,        { FALSE, FALSE }, { 0,     0,     0 }, f_move,     { .m = m_nextscr } },
+#endif
 /* ^^ NCurses is a sad old library.... it does not include button 5 nor
  *    cursor movement in its mouse declaration by default */
 {BUTTON1_DOUBLE_CLICKED, { TRUE , TRUE  }, { 0,     0,     0 }, f_extsel,   { .i = ExtWord }  },

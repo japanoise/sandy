@@ -1371,8 +1371,9 @@ i_pipetext(const char *cmd) {
 			}
 			if(FD_ISSET(perr[0], &fdI) && nerr > 0) {
 				/* Blatant TODO: take last line of stderr and copy as tmptitle */
+				ebuf[0] = '\0';
 				nerr = read(perr[0], ebuf, BUFSIZ);
-				if(nerr != 0)
+				if(nerr == -1)
 					tmptitle = "WARNING! command reported an error!!!";
 				if(nerr < 0)
 					break;

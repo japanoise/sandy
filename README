@@ -40,3 +40,7 @@ Name
 In case you are wondering, sandy was the smartest pet ferret. She died of
 cancer though. We were sad and started coding this editor.
 
+
+Known issues
+------------
+Mouse scroll down works if ncurses is compiled with --enable-ext-mouse.
