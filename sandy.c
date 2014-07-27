@@ -582,7 +582,8 @@ f_select(const Arg * arg) {
 /* Spawn (char **)arg->v */
 void
 f_spawn(const Arg * arg) {
-	int pid = -1;
+	pid_t pid = -1;
+
 	reset_shell_mode();
 	if((pid = fork()) == 0) {
 		/* setsid() used to be called here, but it does not look as a good idea
@@ -1278,11 +1279,12 @@ i_multiply(void (*func)(const Arg * arg), const Arg arg) {
 void
 i_pipetext(const char *cmd) {
 	struct timeval tv;
-	int pin[2], pout[2], perr[2], pid = -1, nr = 1, nerr = 1, nw, written;
+	int pin[2], pout[2], perr[2], nr = 1, nerr = 1, nw, written;
 	int iw = 0, closed = 0, exstatus;
 	char *buf = NULL, *ebuf = NULL, *s = NULL;
 	Filepos auxp;
 	fd_set fdI, fdO;
+	pid_t pid = -1;
 
 	if(!cmd || cmd[0] == '\0')
 		return;
@@ -1347,7 +1349,7 @@ i_pipetext(const char *cmd) {
 		FD_SET(perr[0], &fdI);
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
-		nw = s ? strlen(s) : 0;
+		nw = strlen(s);
 		while(select(FD_SETSIZE, &fdI, &fdO, NULL, &tv) > 0 &&
 		     (nw > 0 || nr > 0)) {
 			fflush(NULL);
@@ -1934,9 +1936,9 @@ i_update(void) {
 	setenv(envs[EnvOffset], buf, 1);
 
 	/* Update title */
-	if(tmptitle)
+	if(tmptitle) {
 		snprintf(title, sizeof(title), "%s", tmptitle);
-	else {
+	} else {
 		statusflags &= ~S_Warned;	/* Reset warning */
 		snprintf(buf, 4, "%ld%%", (100 * ncur) / nlst);
 		snprintf(title, BUFSIZ, "%s%s [%s]%s%s%s%s %ld,%d  %s",
