@@ -1014,7 +1014,7 @@ i_dokeys(const Key bindings[], unsigned int length_bindings) {
 /* Main editing loop */
 void
 i_edit(void) {
-	int i;
+	int i, tch;
 	fd_set fds;
 	Filepos oldsel, oldcur;
 
@@ -1073,9 +1073,12 @@ i_edit(void) {
 		if(c[0] == 0x1B || (isutf8 && !ISASCII(c[0]))) {
 			/* Multi-byte char or escape sequence */
 			wtimeout(textwin, 1);
-			for(i = 1; i < (c[0] == 0x1B ? 6 : UTF8LEN(c[0])); i++)
-				if((c[i] = wgetch(textwin)) == ERR)
+			for(i = 1; i < (c[0] == 0x1B ? 6 : UTF8LEN(c[0])); i++) {
+				tch = wgetch(textwin);
+				c[i] = (char)tch;
+				if(tch == ERR)
 					break;
+			}
 			for(; i < 7; i++)
 				c[i] = '\0';
 			wtimeout(textwin, 0);
