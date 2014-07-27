@@ -1649,10 +1649,10 @@ i_setup(void) {
 				if(fgcolors[i] > 7)
 					init_color(fgcolors[i], fgcolors[i] >> 8,
 					           (fgcolors[i] >> 4) & 0xF, fgcolors[i] & 0xFF);
-				if(bgcolors[i] > 7)
-					init_color(bgcolors[i], bgcolors[i] >> 8, (bgcolors[i] >> 4) & 0xF,
-					           bgcolors[i] & 0xFF);
 
+				if(bgcolors[j] > 7)
+					init_color(bgcolors[j], bgcolors[j] >> 8, (bgcolors[j] >> 4) & 0xF,
+					           bgcolors[j] & 0xFF);
 				init_pair((i * LastBG) + j, fgcolors[i], bgcolors[j]);
 				textattrs[i][j] = COLOR_PAIR((i * LastBG) + j) | colorattrs[i];
 			}
