@@ -1755,10 +1755,10 @@ i_termwininit(void) {
 void
 i_update(void) {
 	int iline, irow, ixrow, ivchar, i, ifg, ibg, vlines;
-	size_t ichar;
-	int cursor_r, cursor_c;
+	int cursor_r = 0, cursor_c = 0;
 	int lines3; /* How many lines fit on screen */
-	long int nscr, ncur, nlst; /* Line number for scrline, fcur.l and lstline */
+	long int nscr, ncur = 1, nlst = 1; /* Line number for scrline, fcur.l and lstline */
+	size_t ichar;
 	bool selection;
 	regmatch_t match[SYN_COLORS][1];
 	Line *l;
