@@ -11,8 +11,8 @@ In order to build sandy you need the ncurses header files.
 Installation
 ------------
 Edit config.mk to match your local setup (sandy is installed into the
-/usr/local namespace by default). Optionally, create a config.h file to 
-further configure the editor at compile time. An examples file is provided as 
+/usr/local namespace by default). Optionally, create a config.h file to
+further configure the editor at compile time. An examples file is provided as
 config.def.h.
 
 Afterwards enter the following command to build and install sandy (use root if
@@ -44,3 +44,6 @@ cancer though. We were sad and started coding this editor.
 Known issues
 ------------
 Mouse scroll down works if ncurses is compiled with --enable-ext-mouse.
+
+If UTF-8 support is not working, change -lncurses to -lncursesw (some distros
+point this to the same lib, some don't.)
