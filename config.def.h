@@ -314,6 +314,17 @@ static const Syntax syntaxes[] = {
 	/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
 	} },
 
+{"go", "\\.go$", {
+		/* HiRed   */  "$^",
+		/* HiGreen */  B"(append|cap|case|chan|close|complex|copy|default|else|fallthrough|for|func|go|if|iota|imag|len|map|print|println|range|real|recover|select|switch)"B,
+		/* LoGreen */  B"(var|const|struct|interface|make|new|type|bool|byte|complex128|complex64|float32|float64|int|int16|int32|int64|int8|uint|uint16|uint32|uint64|uint8|uintptr|string|rune|error|ComplexType|FloatType|IntegerType|Type|Type1)"B,
+		/* HiMag   */  B"(goto|continue|break|return|panic|defer)"B,
+		/* LoMag   */  "(^package|import)|"B"[A-Z_][0-9A-Z_]+"B"",
+		/* HiBlue  */  "(\\(|\\)|\\{|\\}|\\[|\\])",
+		/* LoRed   */  "(\"(\\\\.|[^\"])*\")",
+		/* LoBlue  */  "(//.*|/\\*([^*]|\\*[^/])*\\*/|/\\*([^*]|\\*[^/])*$|^([^/]|/[^*])*\\*/)",
+	} },
+
 {"sh", "\\.sh$", {
 	/* HiRed   */  "$^",
 	/* HiGreen */  "^[0-9A-Z_]+\\(\\)",
