@@ -188,7 +188,9 @@ static int      fifofd;                              /* Command fifo file descri
 static long     statusflags = S_Running | S_Command; /* Status flags, very important, OR'd (see enums above) */
 static int      lastaction = LastNone;               /* The last action we took (see enums above) */
 static int      cols, lines;                         /* Ncurses: to use instead of COLS and LINES, wise */
+#if HANDLE_MOUSE
 static mmask_t  defmmask = 0;                        /* Ncurses: mouse event mask */
+#endif
 static void   (*verb)(const Arg * arg);              /* Verb of current sentence */
 static Arg      varg;                                /* Arguments of the verb (some will be overwritten by adjective) */
 static int      vi;                                  /* Helping var to store place of verb in key chain */
@@ -241,13 +243,17 @@ static char         *i_gettext(Filepos, Filepos);
 static void          i_killundos(Undo **);
 static Line         *i_lineat(unsigned long);
 static unsigned long i_lineno(Line *);
+#if HANDLE_MOUSE
 static void          i_mouse(void);
+#endif
 static void          i_multiply(void (*func)(const Arg * arg), const Arg arg);
 static void          i_pipetext(const char *);
 static void          i_readfifo(void);
 static void          i_readfile(char *);
 static void          i_resize(void);
+#if HANDLE_MOUSE
 static Filepos       i_scrtofpos(int, int);
+#endif
 static bool          i_setfindterm(const char *);
 static void          i_setup(void);
 static void          i_sigwinch(int);
@@ -1715,7 +1721,9 @@ i_sortpos(Filepos * pos0, Filepos * pos1) {
 /* Initialize terminal */
 void
 i_termwininit(void) {
+#if HANDLE_MOUSE
 	unsigned int i;
+#endif
 
 	raw();
 	noecho();
