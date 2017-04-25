@@ -1,11 +1,11 @@
 /* A simplified way to customize */
 #define USE_TERM_STATUS 1
-#define BOTTOM_TITLE    0
+#define BOTTOM_TITLE    1
 #define HILIGHT_CURRENT 1
 #define HILIGHT_SYNTAX  1
 #define SHOW_NONPRINT   0
-#define HANDLE_MOUSE    1
-#define VIM_BINDINGS    1
+#define HANDLE_MOUSE    0
+#define VIM_BINDINGS    0
 
 /* Things unlikely to be changed, yet still in the config.h file */
 static const bool   isutf8     = TRUE;
@@ -103,6 +103,7 @@ static const Key curskeys[] = { /* Plain keys here, no CONTROL or META */
 
 static const Key stdkeys[] = {
 /* keyv.c,                test,                     func,        arg */
+{ .keyv.c = CONTROL('_'), { t_undo,t_rw, 0,   0 },  f_undo,      { .i = 1             } },
 { .keyv.c = CONTROL('@'), { 0,     0,    0,   0 },  f_move,      { .m = m_tomark } },
 { .keyv.c = META(' '),    { 0,     0,    0,   0 },  f_mark,      { 0 } },
 { .keyv.c = META('`'),    { 0,     0,    0,   0 },  f_mark,      { 0 } },
@@ -384,7 +385,7 @@ static const Syntax syntaxes[] = {
 /* Colors */
 static const short  fgcolors[LastFG] = {
 	[DefFG]  = -1,
-	[CurFG]  = (HILIGHT_CURRENT?COLOR_BLACK : -1),
+	[CurFG]  = -1,
 	[SelFG]  = COLOR_BLACK,
 	[SpcFG]  = COLOR_WHITE,
 	[CtrlFG] = COLOR_RED,
@@ -432,7 +433,7 @@ static const int bwattrs[LastFG] = {
 
 static const short bgcolors[LastBG] = {
 	[DefBG] = -1,
-	[CurBG] = (HILIGHT_CURRENT ? COLOR_CYAN : -1),
+	[CurBG] = (HILIGHT_CURRENT ? 235 : -1),
 	[SelBG] = COLOR_YELLOW,
 };
 
