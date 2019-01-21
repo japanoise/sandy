@@ -147,8 +147,8 @@ static const Key stdkeys[] = {
 { .keyv.c = CONTROL('U'), { t_bol, t_rw, 0,   0 },  f_delete,    { .m = m_prevchar    } },
 { .keyv.c = CONTROL('U'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_bol         } },
 { .keyv.c = META('u'),    { t_sel, t_rw, 0,   0 },  f_pipe,      { .v = "tr [a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþ] [A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ] | sed 's/ß/SS/g'" } }, /* Uppercase */
-{ .keyv.c = CONTROL('V'), { 0,     0,    0,   0 },  f_move,      { .m = m_prevscr     } },
-{ .keyv.c = META('v'),    { 0,     0,    0,   0 },  f_move,      { .m = m_nextscr     } },
+{ .keyv.c = META('v'),    { 0,     0,    0,   0 },  f_move,      { .m = m_prevscr     } },
+{ .keyv.c = CONTROL('V'), { 0,     0,    0,   0 },  f_move,      { .m = m_nextscr     } },
 { .keyv.c = CONTROL('W'), { t_rw,  0,    0,   0 },  f_delete,    { .m = m_prevword    } },
 { .keyv.c = CONTROL('X'), { t_mod, t_rw, 0,   0 },  f_save,      { 0 } },
 { .keyv.c = CONTROL('X'), { 0,     0,    0,   0 },  f_toggle,    { .i = S_Running } },
